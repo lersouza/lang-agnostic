@@ -1,0 +1,33 @@
+seed_everything: 42
+model:
+  pretrained_model: "google/byt5-small"
+  use_pretraining: true
+  learning_rate: 3e-5
+  train_dataset: "glue"
+  train_subdataset: mnli
+  validation_set: validation_matched
+  batch_size: 2
+  max_length: 1024
+  target_max_length: 5
+  xlang_dataset_name: null
+  xlang_subdataset_name: null
+  xlang_validation_set: null
+  adam_beta1: 0.9
+  adam_beta2: 0.999
+  adam_eps: 1e-8
+  adam_weight_decay: 0.0
+  output_dir: "./output"
+trainer:
+  # gpus: 1
+  max_epochs: 5
+  val_check_interval: 0.2
+  gradient_clip_val: 1.0
+  accumulate_grad_batches: 2
+  precision: 32
+  default_root_dir: "./checkpoints"
+  callbacks:
+    - class_path: pytorch_lightning.callbacks.LearningRateMonitor
+  logger:
+    class_path: pytorch_lightning.loggers.NeptuneLogger
+    init_args:
+      log_model_checkpoints: false

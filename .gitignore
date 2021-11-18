@@ -1,0 +1,7 @@
+neptune_credentials.txt
+
+.vscode/settings.json
+
+checkpoints/
+lightning_logs/
+configs/neptune-logger.yaml

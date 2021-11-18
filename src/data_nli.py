@@ -11,12 +11,12 @@ class DataDef:
 
 
 def data_def_name(dataset_name, subdataset_name):
-    return f"{dataset_name}:{subdataset_name or 'all'}"
+    return f"{dataset_name}:{subdataset_name}"
 
 
 DATA_DEFS = {
     "glue:mnli": DataDef("mnli", "premise", "hypothesis", "label", 3),
-    "assin2:all": DataDef("assin2", "premise", "hypothesis", "entailment_judgment", 2),
+    "assin2:None": DataDef("assin2", "premise", "hypothesis", "entailment_judgment", 2),
 }
 
 

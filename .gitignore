@@ -1,6 +1,8 @@
 neptune_credentials.txt
 
 .vscode/settings.json
+.neptune/
+.venv/
 
 checkpoints/
 lightning_logs/

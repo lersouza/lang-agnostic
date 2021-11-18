@@ -1,10 +1,6 @@
 #! /bin/sh
 
 CONFIG=$1
+CONFIG_FILE="configs/$CONFIG.yaml"
 
-if [ -z $NEPTUNE_PROJECT ]; then
-    read -p "Enter Neptune project to log: " project
-    export NEPTUNE_PROJECT=$project
-
-    echo $NEPTUNE_PROJECT
-fi
+python src/train_nli.py fit --config $CONFIG_FILE

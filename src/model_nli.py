@@ -32,6 +32,7 @@ class NLIFinetuner(pl.LightningModule):
     def __init__(
         self,
         pretrained_model: str,
+        from_flax: bool,
         use_pretraining: bool,
         learning_rate: float,
         train_dataset: str,
@@ -65,7 +66,7 @@ class NLIFinetuner(pl.LightningModule):
 
         if use_pretraining:
             self.model = T5ForConditionalGeneration.from_pretrained(
-                pretrained_model, config=config
+                 pretrained_model, from_flax=from_flax, config=config
             )
         else:
             self.model = T5ForConditionalGeneration(config)

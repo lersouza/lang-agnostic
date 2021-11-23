@@ -1,6 +1,7 @@
 seed_everything: 42
 model:
   pretrained_model: "google/byt5-small"
+  from_flax: false
   use_pretraining: true
   learning_rate: 3e-5
   train_dataset: "glue"

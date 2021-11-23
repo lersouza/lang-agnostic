@@ -1,7 +1,7 @@
 seed_everything: 42
 model:
-  pretrained_model: "google/byt5-small"
-  from_flax: false
+  pretrained_model: "hugo/byt5-pt-v4"
+  from_flax: true
   use_pretraining: true
   learning_rate: 3e-5
   train_dataset: "assin2"

@@ -17,4 +17,4 @@ def log_artifact(dataclass, instances, logger, epoch, step, path, output_dir):
             writer.writerow(dataclasses.asdict(i))
 
     if logger and logger.experiment:
-        logger.experiment[path].upload(filename)
+        logger.experiment[path].upload(os.path.join(output_dir, filename))

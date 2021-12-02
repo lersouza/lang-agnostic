@@ -4,7 +4,15 @@ model:
   from_flax: true
   use_pretraining: true
   learning_rate: 3e-5
-  train_dataset: glue
+  target_max_length: 5
+  adam_beta1: 0.9
+  adam_beta2: 0.999
+  adam_eps: 1e-8
+  adam_weight_decay: 0.0
+  output_dir: "./output/byt5-pt-mnli/"
+data:
+  tokenizer_name: "hugo/byt5-pt-v4"
+  train_dataset: "glue"
   train_subdataset: mnli
   validation_set: validation_matched
   batch_size: 2
@@ -12,15 +20,10 @@ model:
   target_max_length: 5
   xlang_dataset_name: null
   xlang_subdataset_name: null
-  xlang_validation_set: null
-  adam_beta1: 0.9
-  adam_beta2: 0.999
-  adam_eps: 1e-8
-  adam_weight_decay: 0.0
-  output_dir: "./output/byt5-pt-v4/mnli-assin2/"
+  xlang_validation_set: null 
 trainer:
   gpus: 1
-  max_epochs: 10
+  max_epochs: 5
   val_check_interval: 0.2
   gradient_clip_val: 1.0
   accumulate_grad_batches: 2

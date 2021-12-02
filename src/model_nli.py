@@ -1,22 +1,13 @@
 import os
-import torch
+from dataclasses import dataclass
 
 import pytorch_lightning as pl
-
-from dataclasses import dataclass
-from data_nli import extract_seq2seq_features, DATA_DEFS, data_def_name
-from datasets import load_dataset
-from model_utils import get_parameter_names
-from torch.utils.data import DataLoader
-from transformers import (
-    AutoConfig,
-    AutoTokenizer,
-    T5ForConditionalGeneration,
-    get_scheduler,
-    SchedulerType,
-)
+import torch
+from transformers import (AutoConfig, AutoTokenizer, SchedulerType,
+                          T5ForConditionalGeneration, get_scheduler)
 
 from logging_utils import log_artifact
+from model_utils import get_parameter_names
 
 
 @dataclass
@@ -36,15 +27,7 @@ class NLIFinetuner(pl.LightningModule):
         from_flax: bool,
         use_pretraining: bool,
         learning_rate: float,
-        train_dataset: str,
-        train_subdataset: str,
-        validation_set: str,
-        batch_size: int = 32,
-        max_length: int = 256,
         target_max_length: int = 5,
-        xlang_dataset_name: str = None,
-        xlang_subdataset_name: str = None,
-        xlang_validation_set: str = None,
         adam_beta1: float = 0.9,
         adam_beta2: float = 0.999,
         adam_eps: float = 1e-8,
@@ -56,19 +39,12 @@ class NLIFinetuner(pl.LightningModule):
         self.save_hyperparameters()
 
         self.tokenizer = AutoTokenizer.from_pretrained(pretrained_model)
-        self.data_def = DATA_DEFS[data_def_name(train_dataset, train_subdataset)]
-        self.logs_dir = os.path.join(output_dir, "logs/")
-
-        if xlang_dataset_name:
-            self.xlang_data_def = DATA_DEFS[
-                data_def_name(xlang_dataset_name, xlang_subdataset_name)
-            ]
 
         config = AutoConfig.from_pretrained(pretrained_model)
 
         if use_pretraining:
             self.model = T5ForConditionalGeneration.from_pretrained(
-                 pretrained_model, from_flax=from_flax, config=config
+                pretrained_model, from_flax=from_flax, config=config
             )
         else:
             self.model = T5ForConditionalGeneration(config)
@@ -100,11 +76,18 @@ class NLIFinetuner(pl.LightningModule):
                 do_sample=False,
             )
 
-    def get_num_train_steps(self):
-        batches = len(self.train_dataloader())
-        effective_accum = self.trainer.accumulate_grad_batches
+    def setup(self, stage) -> None:
+        if stage in (None, "fit") and self.trainer and self.trainer.datamodule:
+            self.train_size = self.trainer.datamodule.train_size
+            self.accumulate_grad_batches = self.trainer.accumulate_grad_batches
+            self.max_epochs = self.trainer.max_epochs
+            
 
-        return (batches // effective_accum) * self.trainer.max_epochs
+    def get_num_train_steps(self):
+        batches = self.train_size
+        effective_accum = self.accumulate_grad_batches
+
+        return (batches // effective_accum) * self.max_epochs
 
     def get_optimizer_parameters(self):
         decay_parameters = get_parameter_names(self.model, [torch.nn.LayerNorm])
@@ -156,6 +139,7 @@ class NLIFinetuner(pl.LightningModule):
         output = self(**batch)
 
         self.log("train/loss", output.loss)
+        self.log("train/seq_len", batch["input_ids"].shape[1])
 
         return output.loss
 
@@ -179,6 +163,8 @@ class NLIFinetuner(pl.LightningModule):
             predictions.append(Prediction(texts[i], expected_labels[i]))
 
             labels.append(str(expected_labels[i].item()))
+
+        self.log("val/seq_len", input_ids.shape[1])
 
         # Return predictions
         return {"preds": texts, "labels": labels, "valid_outputs": predictions}
@@ -215,61 +201,4 @@ class NLIFinetuner(pl.LightningModule):
             self.global_step,
             f"val/{prefix}/predictions",
             self.logs_dir,
-        )
-
-    def setup(self, stage):
-        dataset = load_dataset(
-            self.hparams.train_dataset, self.hparams.train_subdataset
-        )
-
-        features = extract_seq2seq_features(
-            self.data_def,
-            self.tokenizer,
-            self.hparams.max_length,
-            self.hparams.target_max_length,
-            dataset,
-        )
-
-        self.train_dataset = features["train"]
-        self.valid_dataset = features[self.hparams.validation_set]
-
-        if self.hparams.xlang_dataset_name:
-            xlang_dataset = load_dataset(
-                self.hparams.xlang_dataset_name, self.hparams.xlang_subdataset_name
-            )
-
-            xlang_features = extract_seq2seq_features(
-                self.xlang_data_def,
-                self.tokenizer,
-                self.hparams.max_length,
-                self.hparams.target_max_length,
-                xlang_dataset,
-            )
-
-            self.cross_valid_dataset = xlang_features[self.hparams.xlang_validation_set]
-
-    def train_dataloader(self):
-        return self._create_dataloader(self.train_dataset, True)
-
-    def val_dataloader(self):
-        val_loader1 = self._create_dataloader(self.valid_dataset)
-
-        if not self.hparams.xlang_dataset_name:
-            return val_loader1
-
-        val_loader2 = self._create_dataloader(self.cross_valid_dataset)
-
-        return [val_loader1, val_loader2]
-
-    def _create_dataloader(
-        self,
-        dataset,
-        shuffle: bool = False,
-        batch_size: int = None,
-    ):
-        return DataLoader(
-            dataset,
-            batch_size=batch_size or self.hparams.batch_size,
-            shuffle=shuffle,
-            num_workers=4,
         )

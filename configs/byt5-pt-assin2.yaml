@@ -4,6 +4,14 @@ model:
   from_flax: true
   use_pretraining: true
   learning_rate: 3e-5
+  target_max_length: 5
+  adam_beta1: 0.9
+  adam_beta2: 0.999
+  adam_eps: 1e-8
+  adam_weight_decay: 0.0
+  output_dir: "./output/byt5-pt-assin2/"
+data:
+  tokenizer_name: "hugo/byt5-pt-v4"
   train_dataset: "assin2"
   train_subdataset: null
   validation_set: test
@@ -13,14 +21,9 @@ model:
   xlang_dataset_name: null
   xlang_subdataset_name: null
   xlang_validation_set: null
-  adam_beta1: 0.9
-  adam_beta2: 0.999
-  adam_eps: 1e-8
-  adam_weight_decay: 0.0
-  output_dir: "./output"
 trainer:
-  # gpus: 1
-  max_epochs: 30
+  gpus: 1
+  max_epochs: 5
   val_check_interval: 1.0
   gradient_clip_val: 1.0
   accumulate_grad_batches: 2

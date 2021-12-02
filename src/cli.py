@@ -10,8 +10,10 @@ class CustomCLI(LightningCLI):
 
     def _ensure_dirs(self):
         subcommand = self.config["subcommand"]
+        output_dir = self.config[subcommand]["model"]["output_dir"]
+        logs_dir = os.path.join(output_dir, "logs/")
+        checkpoint_dir = os.path.join(output_dir, "checkpoints/")
 
-        os.makedirs(self.config[subcommand]["model"]["output_dir"], exist_ok=True)
-        os.makedirs(
-            self.config[subcommand]["trainer"]["default_root_dir"], exist_ok=True
-        )
+        os.makedirs(logs_dir, exist_ok=True)
+        os.makedirs(checkpoint_dir, exist_ok=True)
+

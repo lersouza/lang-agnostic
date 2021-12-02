@@ -1,3 +1,4 @@
+import os
 import torch
 
 import pytorch_lightning as pl
@@ -56,6 +57,7 @@ class NLIFinetuner(pl.LightningModule):
 
         self.tokenizer = AutoTokenizer.from_pretrained(pretrained_model)
         self.data_def = DATA_DEFS[data_def_name(train_dataset, train_subdataset)]
+        self.logs_dir = os.path.join(output_dir, "logs/")
 
         if xlang_dataset_name:
             self.xlang_data_def = DATA_DEFS[
@@ -212,7 +214,7 @@ class NLIFinetuner(pl.LightningModule):
             self.current_epoch,
             self.global_step,
             f"val/{prefix}/predictions",
-            self.hparams.output_dir,
+            self.logs_dir,
         )
 
     def setup(self, stage):

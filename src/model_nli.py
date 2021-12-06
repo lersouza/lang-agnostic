@@ -170,7 +170,7 @@ class NLIFinetuner(pl.LightningModule):
         return {"preds": texts, "labels": labels, "valid_outputs": predictions}
 
     def validation_epoch_end(self, outs):
-        if self.hparams.xlang_dataset_name:
+        if outs and isinstance(outs[0], list):
             # In the case that a cross language validation dataset
             # is specified, we calculate the results for both datasets
             self._run_validation_end(outs[0], 0)

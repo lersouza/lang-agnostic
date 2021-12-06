@@ -38,6 +38,7 @@ class NLIFinetuner(pl.LightningModule):
 
         self.save_hyperparameters()
 
+        self.logs_dir = os.path.join(output_dir, "logs/")
         self.tokenizer = AutoTokenizer.from_pretrained(pretrained_model)
 
         config = AutoConfig.from_pretrained(pretrained_model)

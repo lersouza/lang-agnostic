@@ -57,7 +57,7 @@ def extract_seq2seq_features(
         return encoded
 
     features = dataset.map(
-        _preprocess_sample, batched=False, remove_columns=[hypothesis, premise]
+        _preprocess_sample, batched=False, remove_columns=[hypothesis, premise, label_column]
     )
 
     return features
@@ -101,7 +101,7 @@ class NLIDataModule(LightningDataModule):
         self.max_length = max_length
         self.target_max_length = target_max_length
 
-        self.collate_fn = DataCollatorWithPadding(self.tokenizer, padding="max_length", max_length=self.max_length)
+        self.collate_fn = DataCollatorWithPadding(self.tokenizer, padding="max_length", max_length=self.max_length, return_tensors="pt")
 
     @property
     def train_size(self):
@@ -124,9 +124,9 @@ class NLIDataModule(LightningDataModule):
             dataset,
         )
 
-        self.train_dataset = features["train"]
-        self.valid_dataset = features[self.validation_set]
-        self.__train_size = len(self.train_dataset) // self.batch_size
+        self.__train_dataset_obj = features["train"]
+        self.__valid_dataset_obj = features[self.validation_set]
+        self.__train_size = len(self.__train_dataset_obj) // self.batch_size
 
         if self.xlang_dataset_name:
             xlang_dataset = load_dataset(
@@ -141,18 +141,18 @@ class NLIDataModule(LightningDataModule):
                 xlang_dataset,
             )
 
-            self.cross_valid_dataset = xlang_features[self.xlang_validation_set]
+            self.__cross_valid_dataset_obj = xlang_features[self.xlang_validation_set]
 
     def train_dataloader(self):
-        return self._create_dataloader(self.train_dataset, True)
+        return self._create_dataloader(self.__train_dataset_obj, True)
 
     def val_dataloader(self):
-        val_loader1 = self._create_dataloader(self.valid_dataset)
+        val_loader1 = self._create_dataloader(self.__valid_dataset_obj)
 
         if not self.xlang_dataset_name:
             return val_loader1
 
-        val_loader2 = self._create_dataloader(self.cross_valid_dataset)
+        val_loader2 = self._create_dataloader(self.__cross_valid_dataset_obj)
 
         return [val_loader1, val_loader2]
 

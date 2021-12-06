@@ -151,7 +151,7 @@ class NLIFinetuner(pl.LightningModule):
         output = self(input_ids=input_ids, attention_mask=attention_mask)
 
         texts = self.tokenizer.batch_decode(output, skip_special_tokens=True)
-        expected_labels = batch["label"]
+        expected_labels = batch["labels"]
 
         batch_size = batch["input_ids"].shape[0]
         predictions_size = len(texts)
@@ -161,9 +161,10 @@ class NLIFinetuner(pl.LightningModule):
         predictions, labels = [], []
 
         for i in range(batch_size):
-            predictions.append(Prediction(texts[i], expected_labels[i]))
+            predicted, actual = texts[i], str(expected_labels[i].item())
 
-            labels.append(str(expected_labels[i].item()))
+            predictions.append(Prediction(predicted, actual))
+            labels.append(actual)
 
         self.log("val/seq_len", input_ids.shape[1])
 

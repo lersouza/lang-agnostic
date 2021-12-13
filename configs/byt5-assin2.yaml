@@ -13,7 +13,7 @@ model:
 data:
   tokenizer_name: "google/byt5-small"
   train_dataset: "assin2"
-  train_subdataset: null
+  train_subdataset: "None"
   validation_set: test
   batch_size: 2
   max_length: 1024

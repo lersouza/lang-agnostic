@@ -227,7 +227,7 @@ class NLIDataModule(LightningDataModule):
 
         self.collate_fn = DataCollatorWithPadding(
             self.tokenizer,
-            padding="max_length",
+            padding="longest",
             max_length=self.max_length,
             return_tensors="pt",
         )

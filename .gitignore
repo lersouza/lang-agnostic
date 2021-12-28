@@ -1,5 +1,6 @@
 neptune_credentials.txt
 
+.credentials/
 .vscode/settings.json
 .neptune/
 .venv/

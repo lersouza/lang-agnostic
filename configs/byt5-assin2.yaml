@@ -1,26 +1,24 @@
 seed_everything: 42
-model:
-  pretrained_model: "google/byt5-small"
-  from_flax: false
-  use_pretraining: true
-  learning_rate: 3e-5
-  target_max_length: 5
-  adam_beta1: 0.9
-  adam_beta2: 0.999
-  adam_eps: 1e-8
-  adam_weight_decay: 0.0
-  output_dir: "./output/byt5-assin2/"
 data:
-  tokenizer_name: "google/byt5-small"
-  train_dataset: "assin2"
-  train_subdataset: "None"
-  validation_set: test
-  batch_size: 2
-  max_length: 1024
-  target_max_length: 5
-  xlang_dataset_name: null
-  xlang_subdataset_name: null
-  xlang_validation_set: null
+  class_path: data_nli.Assin2DataModule
+  init_args:
+    tokenizer_name: "google/byt5-small"
+    batch_size: 2
+    max_length: 1024
+    max_target_length: 5
+model:
+  pretrained_model_name: "google/byt5-small"
+  use_pretrained_weights: true
+  max_target_length: 5
+optimizer:
+  class_path: torch.optim.AdamW
+  init_args:
+    lr: 1e-4
+    betas:
+      - 0.9
+      - 0.999
+    eps: 1e-8
+    weight_decay: 0.0
 trainer:
   gpus: 1
   max_epochs: 5

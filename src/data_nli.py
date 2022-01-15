@@ -1,12 +1,12 @@
 from abc import abstractmethod
 from collections import defaultdict
-from doctest import Example
-from typing import Any, Dict
 from datasets import Dataset, load_dataset
 from pytorch_lightning import LightningDataModule
+from torch.utils.data import DataLoader
 from transformers import AutoTokenizer, PreTrainedTokenizer
 from transformers.data.data_collator import DataCollatorWithPadding
-from torch.utils.data import DataLoader
+
+from typing import Any, Dict
 
 
 class TextClassificationDataModule(LightningDataModule):

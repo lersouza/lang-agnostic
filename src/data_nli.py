@@ -24,16 +24,15 @@ class TextClassificationDataModule(LightningDataModule):
         max_target_length: int,
         batch_size: int,
         padding: str = "longest",
-        train_split: str = "train",
-        validation_split: str = "validation",
+        splits: Dict[str, str] = None,
     ):
 
         self.max_length = max_length
         self.max_target_length = max_target_length
         self.batch_size = batch_size
 
-        self.train_split = train_split
-        self.valid_split = validation_split
+        self.splits = {"train": "train", "validation": "validation"}
+        self.splits.update(splits or {})
 
         self.data: Dict[str, Dataset] = {}
         self.features: Dict[str, Dataset] = {}
@@ -58,6 +57,9 @@ class TextClassificationDataModule(LightningDataModule):
     @property
     def model_features(self):
         return ["input_ids", "attention_mask", "target_ids", "label"]
+
+    def split(self, split_name):
+        return self.splits.get(split_name, split_name)
 
     def train_dataloader(self) -> DataLoader:
         return DataLoader(
@@ -152,7 +154,9 @@ class TextClassificationDataModule(LightningDataModule):
 
 class Assin2DataModule(TextClassificationDataModule):
     def prepare_datasets(self):
-        dataset = load_dataset("assin2", split=[self.train_split, self.valid_split])
+        dataset = load_dataset(
+            "assin2", split=[self.splits["train"], self.splits["validation"]]
+        )
 
         train = dataset[0].rename_column("entailment_judgment", "label")
         valid = dataset[1].rename_column("entailment_judgment", "label")
@@ -161,18 +165,29 @@ class Assin2DataModule(TextClassificationDataModule):
 
 
 class XnliDataModule(TextClassificationDataModule):
-    def __init__(self, *args, train_language: str = "en", **kwargs):
+    def __init__(self, *args, languages: Dict[str, str] = None, **kwargs):
         super().__init__(*args, **kwargs)
 
-        self.train_language = train_language
+        self.languages = {"train": "en", "validation": "all_languages"}
+        self.languages.update(languages or {})
 
     def prepare_datasets(self):
-        train = load_dataset("xnli", self.train_language, split=self.train_split)
-        valid = load_dataset("xnli", "all_languages", split=self.valid_split)
-
-        valid = valid.map(
-            self.flatten, batched=True, desc="Flatenning multi language dataset"
+        train = load_dataset(
+            "xnli", self.languages["train"], split=self.splits["train"]
         )
+        valid = load_dataset(
+            "xnli", self.languages["validation"], split=self.splits["validation"]
+        )
+
+        if self.languages["train"] == "all_languages":
+            train = train.map(
+                self.flatten, batched=True, desc="Flatenning multi language dataset"
+            )
+
+        if self.languages["validation"] == "all_languages":
+            valid = valid.map(
+                self.flatten, batched=True, desc="Flatenning multi language dataset"
+            )
 
         return {"train": train, "validation": valid}
 

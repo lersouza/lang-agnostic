@@ -6,6 +6,9 @@ data:
     batch_size: 2
     max_length: 1024
     target_max_length: 5
+    languages:
+      train: en
+      validation: all_languages
 model:
   pretrained_model_name: "google/byt5-small"
   use_pretrained_weights: true

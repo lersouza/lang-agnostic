@@ -1,5 +1,6 @@
-import pytorch_lightning as pl
 import re
+
+import pytorch_lightning as pl
 import torch
 
 from datasets import load_metric
@@ -80,14 +81,23 @@ class TextClassificationModel(pl.LightningModule):
 
         self.log("val/seq_len", batch["input_ids"].shape[1])
 
-    def validation_epoch_end(self, outs):
+    def validation_epoch_end(self, outputs):
         metrics = self.validation_metric.compute()
 
         for metric in metrics.keys():
-            self.log(f"val/{metric}", torch.tensor(metrics[metric]), prog_bar=True)
+            self.log(f"val/{metric}", torch.Tensor(metrics[metric]), prog_bar=True)
 
     def _convert_to_numeric_label(self, predicted_values: torch.Tensor) -> torch.Tensor:
-        s2i = lambda text: int(text.strip()) if re.match("^\d+$", text.strip()) else -1
+        """
+        Convert model's output tokens to an integer representation of a predicted label.
+
+        First, the `predicted_values` is decoded using the model's tokenizer.
+        Then, every value is casted as integer.
+
+        If an invalid integer label is produced (a string "invalid", for instance),
+        we assume `-1` as the output, since this corresponds to an invalid label.
+        """
+        s2i = lambda text: int(text.strip()) if re.match(r"^\d+$", text.strip()) else -1
 
         prediction_texts = self.tokenizer.batch_decode(
             predicted_values, skip_special_tokens=True

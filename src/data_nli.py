@@ -1,3 +1,5 @@
+import os
+
 from abc import abstractmethod
 from collections import defaultdict
 from datasets import Dataset, load_dataset
@@ -25,11 +27,13 @@ class TextClassificationDataModule(LightningDataModule):
         batch_size: int,
         padding: str = "longest",
         splits: Dict[str, str] = None,
+        dataloader_num_workers: int = None,
     ):
 
         self.max_length = max_length
         self.max_target_length = max_target_length
         self.batch_size = batch_size
+        self.dataloader_num_workers = dataloader_num_workers or os.cpu_count()
 
         self.splits = {"train": "train", "validation": "validation"}
         self.splits.update(splits or {})
@@ -67,6 +71,7 @@ class TextClassificationDataModule(LightningDataModule):
             batch_size=self.batch_size,
             shuffle=True,
             collate_fn=self.collate_fn,
+            num_workers=self.dataloader_num_workers,
         )
 
     def val_dataloader(self) -> DataLoader:
@@ -75,6 +80,7 @@ class TextClassificationDataModule(LightningDataModule):
             batch_size=self.batch_size,
             shuffle=False,
             collate_fn=self.collate_fn,
+            num_workers=self.dataloader_num_workers,
         )
 
     @abstractmethod

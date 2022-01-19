@@ -4,3 +4,4 @@ transformers==4.12.3
 protobuf==3.9.2
 jsonargparse[signatures]
 neptune-client
+sentencepiece

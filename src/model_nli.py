@@ -67,7 +67,7 @@ class TextClassificationModel(pl.LightningModule):
         output = self(**batch)
 
         self.log("train/loss", output.loss)
-        self.log("train/seq_len", batch["input_ids"].shape[1])
+        self.log("train/seq_len", float(batch["input_ids"].shape[1]))
 
         return output.loss
 
@@ -79,13 +79,13 @@ class TextClassificationModel(pl.LightningModule):
 
         self.validation_metric.add_batch(predictions=predictions, references=references)
 
-        self.log("val/seq_len", batch["input_ids"].shape[1])
+        self.log("val/seq_len", float(batch["input_ids"].shape[1]))
 
     def validation_epoch_end(self, outputs):
         metrics = self.validation_metric.compute()
 
         for metric in metrics.keys():
-            self.log(f"val/{metric}", torch.Tensor(metrics[metric]), prog_bar=True)
+            self.log(f"val/{metric}", torch.tensor(metrics[metric]), prog_bar=True)
 
     def _convert_to_numeric_label(self, predicted_values: torch.Tensor) -> torch.Tensor:
         """

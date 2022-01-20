@@ -188,12 +188,12 @@ class XnliDataModule(TextClassificationDataModule):
         if self.languages["train"] == "all_languages":
             train = train.map(
                 self.flatten, batched=True, desc="Flatenning multi language dataset"
-            )
+            ).sort(column="language")
 
         if self.languages["validation"] == "all_languages":
             valid = valid.map(
                 self.flatten, batched=True, desc="Flatenning multi language dataset"
-            )
+            ).sort(column="language")
 
         return {"train": train, "validation": valid}
 

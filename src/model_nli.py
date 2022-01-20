@@ -1,3 +1,4 @@
+from collections import defaultdict
 import re
 
 import pytorch_lightning as pl
@@ -5,6 +6,23 @@ import torch
 
 from datasets import load_metric
 from transformers import AutoConfig, AutoTokenizer, T5ForConditionalGeneration
+
+
+def format_results_as_table(predictions, raw_predictions, references):
+    return ["predictions", "raw_predictions", "references"], [
+        [str(p), str(o), str(r)]
+        for p, o, r in zip(predictions, raw_predictions, references)
+    ]
+
+
+def aggregate_outputs(outputs):
+    if not outputs:
+        return None
+
+    keys = outputs[0].keys()
+    aggregated = {k: sum([o[k] for o in outputs], []) for k in keys}
+
+    return aggregated
 
 
 class TextClassificationModel(pl.LightningModule):
@@ -45,11 +63,17 @@ class TextClassificationModel(pl.LightningModule):
     ):
         """Runs the network for prediction (logits) and loss calculation."""
 
-        if self.training:
+        if self.training == True:
+            # Changing pad token in target labels
+            # See: https://huggingface.co/docs/transformers/model_doc/t5#transformers.T5ForConditionalGeneration
+            target_labels = target_ids.masked_fill(
+                target_ids == self.tokenizer.pad_token_id, -100
+            )
+
             model_output = self.model(
                 input_ids=input_ids,
                 attention_mask=attention_mask,
-                labels=target_ids,
+                labels=target_labels,
                 return_dict=True,
             )
 
@@ -74,18 +98,30 @@ class TextClassificationModel(pl.LightningModule):
     def validation_step(self, batch, batch_idx):
         output = self(**batch)
 
-        predictions = self._convert_to_numeric_label(output)
+        predictions, original = self._convert_to_numeric_label(output)
         references = batch["labels"]
 
         self.validation_metric.add_batch(predictions=predictions, references=references)
-
         self.log("val/seq_len", float(batch["input_ids"].shape[1]))
 
+        return {
+            "predictions": predictions,
+            "raw_predictions": original,
+            "references": references,
+        }
+
     def validation_epoch_end(self, outputs):
+        out = aggregate_outputs(outputs)
+
         metrics = self.validation_metric.compute()
+        cols, samples = format_results_as_table(
+            out["predictions"], out["raw_predictions"], out["references"]
+        )
 
         for metric in metrics.keys():
             self.log(f"val/{metric}", torch.tensor(metrics[metric]), prog_bar=True)
+
+        self.logger.log_text(key="val/classifications", columns=cols, data=samples)
 
     def _convert_to_numeric_label(self, predicted_values: torch.Tensor) -> torch.Tensor:
         """
@@ -104,4 +140,4 @@ class TextClassificationModel(pl.LightningModule):
         )
         predicted_labels = [s2i(t) for t in prediction_texts]
 
-        return predicted_labels
+        return predicted_labels, prediction_texts

@@ -99,7 +99,7 @@ class TextClassificationModel(pl.LightningModule):
         output = self(**batch)
 
         predictions, original = self._convert_to_numeric_label(output)
-        references = batch["labels"]
+        references = batch["labels"].tolist()
 
         self.validation_metric.add_batch(predictions=predictions, references=references)
         self.log("val/seq_len", float(batch["input_ids"].shape[1]))

@@ -102,7 +102,7 @@ class TextClassificationDataModule(LightningDataModule):
             self.tokenize_sequences,
             batched=True,
             desc="Tokenizing",
-            remove_columns=["input", "label_string"],
+            remove_columns=["input", "target"],
             fn_kwargs={
                 "tokenizer": self.tokenizer,
                 "max_length": self.max_length,
@@ -133,8 +133,8 @@ class TextClassificationDataModule(LightningDataModule):
         label_attr: str = "label",
     ):
         return {
-            "input": f"premise: {example[premise_attr]}. hypothesis: {example[hypothesis_attr]}",
-            "label_string": str(example[label_attr]),
+            "input": f"premise: {example[premise_attr]}. hypothesis: {example[hypothesis_attr]}.",
+            "target": str(example[label_attr]),
         }
 
     @staticmethod
@@ -151,7 +151,7 @@ class TextClassificationDataModule(LightningDataModule):
 
         with tokenizer.as_target_tokenizer():
             labels = tokenizer(
-                example["label_string"], max_length=max_target_length, truncation=True
+                example["target"], max_length=max_target_length, truncation=True
             )
         model_inputs["target_ids"] = labels["input_ids"]
 

@@ -20,6 +20,6 @@ class FakeTokenizer(PreTrainedTokenizer):
         attention_mask = [1] * max_length
 
         return {
-            "input_ids": [input_ids] * samples_length,
-            "attention_mask": [attention_mask] * samples_length,
+            "input_ids": [input_ids] * samples_length if samples_length > 1 else input_ids,
+            "attention_mask": [attention_mask] * samples_length if samples_length > 1 else attention_mask,
         }

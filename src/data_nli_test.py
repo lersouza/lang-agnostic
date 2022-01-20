@@ -137,6 +137,30 @@ class TextClassificationTest(TestCase):
         self.assertEqual(example["input"], expected_input)
         self.assertEqual(example["target"], expected_target)
 
+    def test_tokenization(self, tokenizer_mock):
+        examples = {
+            "premise": ["my premise", "my premise 2"],
+            "hypothesis": ["my hypothesis", "my hypothesis 2"],
+            "label": [2, 1],
+            "input": ["input_1", "input_2"],
+            "target": ["2", "1"],
+        }
+
+        tokenizer = FakeTokenizer()
+        example = TextClassificationDataModule.tokenize_sequences(
+            examples, tokenizer, 10, 5
+        )
+
+        self.assertIn("input_ids", example)
+        self.assertIn("attention_mask", example)
+        self.assertIn("target_ids", example)
+
+        self.assertEqual(len(example["input_ids"]), 2)
+        self.assertEqual(len(example["input_ids"][0]), 10)
+
+        self.assertEqual(len(example["target_ids"]), 2)
+        self.assertEqual(len(example["target_ids"][0]), 5)
+
 
 @patch("data_nli.load_dataset")
 @patch("data_nli.AutoTokenizer.from_pretrained", return_value=FakeTokenizer())

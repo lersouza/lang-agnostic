@@ -29,6 +29,7 @@ class TextClassificationDataModule(LightningDataModule):
         splits: Dict[str, str] = None,
         dataloader_num_workers: int = None,
     ):
+        super().__init__()
 
         self.max_length = max_length
         self.max_target_length = max_target_length
@@ -45,6 +46,8 @@ class TextClassificationDataModule(LightningDataModule):
         self.collate_fn = DataCollatorWithPadding(
             self.tokenizer, padding=padding, max_length=max_length, return_tensors="pt"
         )
+
+        self.save_hyperparameters()
 
     @property
     def premise_attr(self):
@@ -176,6 +179,8 @@ class XnliDataModule(TextClassificationDataModule):
 
         self.languages = {"train": "en", "validation": "all_languages"}
         self.languages.update(languages or {})
+
+        self.save_hyperparameters()
 
     def prepare_datasets(self):
         train = load_dataset(

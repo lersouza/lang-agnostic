@@ -121,6 +121,9 @@ class TextClassificationModel(pl.LightningModule):
         for metric in metrics.keys():
             self.log(f"val/{metric}", torch.tensor(metrics[metric]), prog_bar=True)
 
+        self.log("val/num_predictions", float(len(out["predictions"])))
+        self.log("val/num_references", float(len(out["references"])))
+
         self.logger.log_text(key="val/classifications", columns=cols, data=samples)
 
     def _convert_to_numeric_label(self, predicted_values: torch.Tensor) -> torch.Tensor:

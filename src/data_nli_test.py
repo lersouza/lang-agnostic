@@ -126,7 +126,7 @@ class TextClassificationTest(TestCase):
     def test_input_sequences(self, tokenizer_mock):
         example = {"premise": "my premise", "hypothesis": "my hypothesis", "label": 2}
 
-        expected_input = "premise: my premise. hypothesis: my hypothesis."
+        expected_input = "xnli: premise: my premise hypothesis: my hypothesis"
         expected_target = "2"
 
         example = TextClassificationDataModule.prepare_input_sentence(example)
@@ -136,6 +136,31 @@ class TextClassificationTest(TestCase):
 
         self.assertEqual(example["input"], expected_input)
         self.assertEqual(example["target"], expected_target)
+
+    def test_input_sequence_on_map(self, tokenizer_mock):
+        dataset_original = Dataset.from_dict(
+            {
+                "premise": ["premise no 1", "premise no 2", "premise no 3"],
+                "hypothesis": ["hypothesis no 1", "hypothesis no 2", "hypothesis no 3"],
+                "label": [0, 1, 2],
+                "some_random_column": ["val 1", "val 2", "val 3"],
+            }
+        )
+
+        expected_inputs = [
+            "xnli: premise: premise no 1 hypothesis: hypothesis no 1",
+            "xnli: premise: premise no 2 hypothesis: hypothesis no 2",
+            "xnli: premise: premise no 3 hypothesis: hypothesis no 3",
+        ]
+
+        expected_targets = ["0", "1", "2"]
+
+        preprocessed = dataset_original.map(
+            TextClassificationDataModule.prepare_input_sentence
+        )
+
+        self.assertEqual(preprocessed["input"], expected_inputs)
+        self.assertEqual(preprocessed["target"], expected_targets)
 
     def test_tokenization(self, tokenizer_mock):
         examples = {
@@ -236,3 +261,48 @@ class XnliTest(TestCase):
 
         train_mock.map.assert_not_called()
         valid_mock.map.assert_called_with(module.flatten, batched=True, desc=ANY)
+
+    def test_flatten(self, _, load_dataset_mock):
+        dataset_original = Dataset.from_dict(
+            {
+                "premise": [
+                    {"en": "premise no 1", "pt": "premissa num 1"},
+                    {"en": "premise no 2", "pt": "premissa num 2"},
+                ],
+                "hypothesis": [
+                    {
+                        "language": ["en", "pt"],
+                        "translation": ["hypothesis no 1", "hipótese num 1"],
+                    },
+                    {
+                        "language": ["en", "pt"],
+                        "translation": ["hypothesis no 2", "hipótese num 2"],
+                    },
+                ],
+                "label": [0, 1],
+            }
+        )
+
+        expected_premise = [
+            "premise no 1",
+            "premissa num 1",
+            "premise no 2",
+            "premissa num 2",
+        ]
+
+        expected_hypothesis = [
+            "hypothesis no 1",
+            "hipótese num 1",
+            "hypothesis no 2",
+            "hipótese num 2",
+        ]
+
+        expected_labels = [
+            0, 0, 1, 1
+        ]
+
+        result = dataset_original.map(XnliDataModule.flatten, batched=True)
+
+        self.assertListEqual(result["premise"], expected_premise)
+        self.assertListEqual(result["hypothesis"], expected_hypothesis)
+        self.assertListEqual(result["label"], expected_labels)

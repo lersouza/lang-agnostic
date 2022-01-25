@@ -136,7 +136,7 @@ class TextClassificationDataModule(LightningDataModule):
         label_attr: str = "label",
     ):
         return {
-            "input": f"premise: {example[premise_attr]}. hypothesis: {example[hypothesis_attr]}.",
+            "input": f"xnli: premise: {example[premise_attr]} hypothesis: {example[hypothesis_attr]}",
             "target": str(example[label_attr]),
         }
 

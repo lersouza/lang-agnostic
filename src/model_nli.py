@@ -5,7 +5,7 @@ import pytorch_lightning as pl
 import torch
 
 from datasets import load_metric
-from transformers import AutoConfig, AutoTokenizer, T5ForConditionalGeneration
+from transformers import AutoConfig, AutoTokenizer, AutoModelForSeq2SeqLM
 
 
 def format_results_as_table(predictions, raw_predictions, references):
@@ -46,11 +46,11 @@ class TextClassificationModel(pl.LightningModule):
         config = AutoConfig.from_pretrained(pretrained_model_name)
 
         if use_pretrained_weights:
-            self.model = T5ForConditionalGeneration.from_pretrained(
+            self.model = AutoModelForSeq2SeqLM.from_pretrained(
                 pretrained_model_name, from_flax=from_flax, config=config
             )
         else:
-            self.model = T5ForConditionalGeneration(config)
+            self.model = AutoModelForSeq2SeqLM.from_config(config)
 
         self.validation_metric = load_metric(metric_name)
 

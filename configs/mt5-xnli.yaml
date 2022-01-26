@@ -6,21 +6,20 @@ data:
     batch_size: 32
     max_length: 256
     max_target_length: 5
-    languages:
-      train: en
-      validation: all_languages
+    train_language: en
 model:
   pretrained_model_name: "google/mt5-small"
   use_pretrained_weights: true
   max_target_length: 5
 optimizer:
-  class_path: torch.optim.AdamW
+  class_path: transformers.optimization.Adafactor
   init_args:
-    lr: 0.00003
+    lr: 0.001
+    scale_parameter: false
+    relative_step: false
 trainer:
   gpus: 1
   max_epochs: 3
-  gradient_clip_val: 1.0
   precision: 32
   logger:
     class_path: pytorch_lightning.loggers.WandbLogger

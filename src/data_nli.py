@@ -2,13 +2,14 @@ import os
 
 from abc import abstractmethod
 from collections import defaultdict
-from datasets import Dataset, load_dataset
+from datasets import Dataset, DatasetDict, Split, load_dataset
+from numpy import isin
 from pytorch_lightning import LightningDataModule
 from torch.utils.data import DataLoader
 from transformers import AutoTokenizer, PreTrainedTokenizer
 from transformers.data.data_collator import DataCollatorWithPadding
 
-from typing import Any, Dict
+from typing import Any, Dict, Union
 
 
 class TextClassificationDataModule(LightningDataModule):
@@ -40,7 +41,7 @@ class TextClassificationDataModule(LightningDataModule):
         self.splits.update(splits or {})
 
         self.data: Dict[str, Dataset] = {}
-        self.features: Dict[str, Dataset] = {}
+        self.features: Dict[str, Union[Dataset, DatasetDict]] = {}
 
         self.tokenizer = AutoTokenizer.from_pretrained(tokenizer_name)
         self.collate_fn = DataCollatorWithPadding(
@@ -65,26 +66,21 @@ class TextClassificationDataModule(LightningDataModule):
     def model_features(self):
         return ["input_ids", "attention_mask", "target_ids", "label"]
 
-    def split(self, split_name):
-        return self.splits.get(split_name, split_name)
+    @property
+    def val_dataloader_names(self):
+        return ["default"]
 
     def train_dataloader(self) -> DataLoader:
-        return DataLoader(
-            self.features["train"],
-            batch_size=self.batch_size,
-            shuffle=True,
-            collate_fn=self.collate_fn,
-            num_workers=self.dataloader_num_workers,
-        )
+        return self._create_dataloader(self.features["train"], shuffle=True)
 
     def val_dataloader(self) -> DataLoader:
-        return DataLoader(
-            self.features["validation"],
-            batch_size=self.batch_size,
-            shuffle=False,
-            collate_fn=self.collate_fn,
-            num_workers=self.dataloader_num_workers,
-        )
+        if isinstance(self.features["validation"], DatasetDict):
+            return [
+                self._create_dataloader(self.features["validation"][s])
+                for s in self.val_dataloader_names
+            ]
+
+        return self._create_dataloader(self.features["validation"])
 
     @abstractmethod
     def prepare_datasets(self):
@@ -115,8 +111,8 @@ class TextClassificationDataModule(LightningDataModule):
 
         return features
 
-    def prepare_features_for_model(self, subset: str):
-        self.features[subset].set_format(columns=self.model_features)
+    def prepare_features_for_model(self, split: str):
+        self.features[split].set_format(columns=self.model_features)
 
     def prepare_data(self) -> None:
         self.prepare_datasets()  # Force data download in prepare_data
@@ -124,9 +120,18 @@ class TextClassificationDataModule(LightningDataModule):
     def setup(self, stage: str = None) -> None:
         self.data = self.prepare_datasets()
 
-        for subset in ("train", "validation"):
-            self.features[subset] = self.preprocess(self.data[subset], subset)
-            self.prepare_features_for_model(subset)
+        for split in ("train", "validation"):
+            self.features[split] = self.preprocess(self.data[split], split)
+            self.prepare_features_for_model(split)
+
+    def _create_dataloader(self, feature_set: Dataset, shuffle: bool = False):
+        return DataLoader(
+            feature_set,
+            batch_size=self.batch_size,
+            shuffle=shuffle,
+            collate_fn=self.collate_fn,
+            num_workers=self.dataloader_num_workers,
+        )
 
     @staticmethod
     def prepare_input_sentence(
@@ -174,33 +179,55 @@ class Assin2DataModule(TextClassificationDataModule):
 
 
 class XnliDataModule(TextClassificationDataModule):
-    def __init__(self, *args, languages: Dict[str, str] = None, **kwargs):
+    XNLI_LANGUAGES = [
+        "ar",
+        "bg",
+        "de",
+        "el",
+        "en",
+        "es",
+        "fr",
+        "hi",
+        "ru",
+        "sw",
+        "th",
+        "tr",
+        "ur",
+        "vi",
+        "zh",
+    ]
+
+    def __init__(self, *args, train_language: str = "en", **kwargs):
         super().__init__(*args, **kwargs)
 
-        self.languages = {"train": "en", "validation": "all_languages"}
-        self.languages.update(languages or {})
+        self.train_language = train_language
 
         self.save_hyperparameters()
 
+    @property
+    def val_dataloader_names(self):
+        return self.XNLI_LANGUAGES
+
     def prepare_datasets(self):
-        train = load_dataset(
-            "xnli", self.languages["train"], split=self.splits["train"]
-        )
-        valid = load_dataset(
-            "xnli", self.languages["validation"], split=self.splits["validation"]
-        )
+        xnli_splits = [self.splits["train"], self.splits["validation"]]
+        xnli_dataset = load_dataset("xnli", "all_languages", split=xnli_splits)
 
-        if self.languages["train"] == "all_languages":
-            train = train.map(
-                self.flatten, batched=True, desc="Flatenning multi language dataset"
-            ).sort(column="language")
+        train, valid = xnli_dataset
+        filter_train_data = lambda e: e["language"] == self.train_language
 
-        if self.languages["validation"] == "all_languages":
-            valid = valid.map(
-                self.flatten, batched=True, desc="Flatenning multi language dataset"
-            ).sort(column="language")
+        train = train.map(self.flatten, batched=True).filter(filter_train_data)
+        valid = self._build_language_validation(valid.map(self.flatten, batched=True))
 
         return {"train": train, "validation": valid}
+
+    def _build_language_validation(self, xnli_validation: Dataset):
+        # We load a dataset for each language available in XNLI
+        return DatasetDict(
+            {
+                lang: xnli_validation.filter(lambda e: e["language"] == lang)
+                for lang in self.XNLI_LANGUAGES
+            }
+        )
 
     @staticmethod
     def flatten(examples):
@@ -228,7 +255,6 @@ class XnliDataModule(TextClassificationDataModule):
             'premise': 'you know during the season and i guess at at your level uh you lose them to the next ...
         }
         """
-
         h = [
             (i, lang, trans)
             for i, ex in enumerate(examples["hypothesis"])
@@ -250,29 +276,3 @@ class XnliDataModule(TextClassificationDataModule):
             features["label"].append(examples["label"][i])
 
         return features
-
-
-if __name__ == "__main__":
-    from random import randint
-
-    data_module = Assin2DataModule(
-        "google/byt5-small",
-        1024,
-        5,
-        32,
-        train_split="train",
-        validation_split="validation",
-    )
-    data_module.prepare_data()
-    data_module.setup("fit")
-
-    batch = next(iter(data_module.val_dataloader()))
-
-    print("Attrs:", batch.keys())
-    print("Shape:", batch["input_ids"].shape)
-    print("Label sample:")
-
-    idx = randint(0, 32)
-
-    print("\tOriginal:", data_module.data["validation"][idx]["label"])
-    print("\tBatch:", batch["labels"][idx])

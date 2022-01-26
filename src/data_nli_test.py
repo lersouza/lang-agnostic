@@ -1,11 +1,18 @@
+import os
+import unittest
+
 from typing import Dict
 from unittest import TestCase
 from unittest.mock import MagicMock, Mock, patch, call, ANY
 
-from datasets import Dataset
+from datasets import Dataset, DatasetDict
+from torch.utils.data import DataLoader
 
 from data_nli import Assin2DataModule, TextClassificationDataModule, XnliDataModule
 from test_utils import FakeTokenizer
+
+
+RUN_SLOW = os.getenv("RUN_SLOW", False)
 
 
 def create_mock_data(
@@ -186,6 +193,30 @@ class TextClassificationTest(TestCase):
         self.assertEqual(len(example["target_ids"]), 2)
         self.assertEqual(len(example["target_ids"][0]), 5)
 
+    def test_multiple_dataloaders(self, tokenizer_mock):
+        class _ConcreteClass(TextClassificationDataModule):
+            @property
+            def val_dataloader_names(self):
+                return ["pt", "en"]
+
+            def prepare_datasets(self):
+                train_data = create_mock_data()
+
+                val_data_1 = create_mock_data()
+                val_data_2 = create_mock_data()
+
+                val_data = DatasetDict({"pt": val_data_1, "en": val_data_2})
+
+                return {"train": train_data, "validation": val_data}
+
+        module = _ConcreteClass("pretrained", 10, 10, 10)
+        module.setup("fit")
+
+        val_dataloaders = module.val_dataloader()
+
+        self.assertIsInstance(val_dataloaders, list)
+        self.assertEqual(len(val_dataloaders), 2)
+
 
 @patch("data_nli.load_dataset")
 @patch("data_nli.AutoTokenizer.from_pretrained", return_value=FakeTokenizer())
@@ -220,49 +251,41 @@ class Assin2Test(TestCase):
         valid_mock.rename_column.assert_called_with("entailment_judgment", "label")
 
 
-@patch("data_nli.load_dataset")
 @patch("data_nli.AutoTokenizer.from_pretrained", return_value=FakeTokenizer())
 class XnliTest(TestCase):
-    def test_load_datasets(self, _, load_dataset: Mock):
+    @patch("data_nli.load_dataset", return_value=[Mock(), Mock()])
+    def test_load_datasets(self, load_dataset: Mock, _):
         datasets = XnliDataModule("pretrained", 10, 10, 32).prepare_datasets()
+        expected_lang_calls = [call(ANY, ANY, split=["train", "validation"])]
 
-        load_dataset.assert_has_calls(
-            [
-                call("xnli", "en", split="train"),
-                call("xnli", "all_languages", split="validation"),
-            ]
-        )
+        load_dataset.assert_has_calls(expected_lang_calls)
 
         self.assertIn("train", datasets)
         self.assertIn("validation", datasets)
 
-    def test_load_datasets_splits(self, _, load_dataset: Mock):
+    @patch("data_nli.load_dataset", return_value=[Mock(), Mock()])
+    def test_load_datasets_splits(self, load_dataset: Mock, _):
         custom_splits = {"train": "train[:5%]", "validation": "validation_x"}
+        expected_lang_calls = [call(ANY, ANY, split=["train[:5%]", "validation_x"])]
 
         datasets = XnliDataModule(
             "pretrained", 10, 10, 32, splits=custom_splits
         ).prepare_datasets()
 
-        load_dataset.assert_has_calls(
-            [
-                call("xnli", "en", split="train[:5%]"),
-                call("xnli", "all_languages", split="validation_x"),
-            ]
-        )
+        load_dataset.assert_has_calls(expected_lang_calls)
 
-    def test_flatten_when_necessary(self, _, load_dataset: Mock):
-        languages = {"train": "en", "validation": "all_languages"}
+    @unittest.skipUnless(RUN_SLOW == True, "Downloads the actual dataset")
+    def test_return_multiple_dataloaders(self, _):
+        module = XnliDataModule("pretrained", 10, 10, 32)
+        module.setup("fit")
 
-        train_mock, valid_mock = MagicMock(), MagicMock()
-        load_dataset.side_effect = [train_mock, valid_mock]
+        val_dataloaders = module.val_dataloader()
 
-        module = XnliDataModule("pretrained", 10, 10, 32, languages=languages)
-        module.prepare_datasets()
+        self.assertIsInstance(val_dataloaders, list)
+        self.assertIsInstance(val_dataloaders[0], DataLoader)
+        self.assertEqual(len(val_dataloaders), len(module.XNLI_LANGUAGES))
 
-        train_mock.map.assert_not_called()
-        valid_mock.map.assert_called_with(module.flatten, batched=True, desc=ANY)
-
-    def test_flatten(self, _, load_dataset_mock):
+    def test_flatten(self, _):
         dataset_original = Dataset.from_dict(
             {
                 "premise": [
@@ -297,9 +320,7 @@ class XnliTest(TestCase):
             "hipótese num 2",
         ]
 
-        expected_labels = [
-            0, 0, 1, 1
-        ]
+        expected_labels = [0, 0, 1, 1]
 
         result = dataset_original.map(XnliDataModule.flatten, batched=True)
 

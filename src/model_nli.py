@@ -1,4 +1,3 @@
-from collections import defaultdict
 import re
 
 import pytorch_lightning as pl
@@ -7,22 +6,31 @@ import torch
 from datasets import load_metric
 from transformers import AutoConfig, AutoTokenizer, AutoModelForSeq2SeqLM
 
+from logging_utils import log_text
 
-def format_results_as_table(predictions, raw_predictions, references):
-    return ["predictions", "raw_predictions", "references"], [
-        [str(p), str(o), str(r)]
-        for p, o, r in zip(predictions, raw_predictions, references)
+
+def format_results_as_table(predictions, references):
+    return ["predictions", "references"], [
+        [str(p), str(r)] for p, r in zip(predictions, references)
     ]
 
 
-def aggregate_outputs(outputs):
-    if not outputs:
-        return None
-
+def aggregate_single_output(outputs):
     keys = outputs[0].keys()
     aggregated = {k: sum([o[k] for o in outputs], []) for k in keys}
 
     return aggregated
+
+
+def aggregate_outputs(outputs, dataloader_names):
+    if isinstance(outputs[0], list):
+        assert len(dataloader_names) == len(outputs)
+
+        return {
+            k: aggregate_outputs(outputs[i]) for i, k in enumerate(dataloader_names)
+        }
+
+    return {dataloader_names[0]: aggregate_single_output(outputs)}
 
 
 class TextClassificationModel(pl.LightningModule):
@@ -43,6 +51,8 @@ class TextClassificationModel(pl.LightningModule):
         self.save_hyperparameters()
 
         self.tokenizer = AutoTokenizer.from_pretrained(pretrained_model_name)
+        self.val_dataloader_names = None
+
         config = AutoConfig.from_pretrained(pretrained_model_name)
 
         if use_pretrained_weights:
@@ -86,6 +96,11 @@ class TextClassificationModel(pl.LightningModule):
                 do_sample=False,
             )
 
+    def setup(self, stage):
+        self.val_dataloader_names = self.trainer.datamodule.val_dataloader_names or [
+            "default"
+        ]
+
     def training_step(self, batch, batch_idx):
         """Performs the training step, logging the loss."""
         output = self(**batch)
@@ -98,33 +113,41 @@ class TextClassificationModel(pl.LightningModule):
     def validation_step(self, batch, batch_idx):
         output = self(**batch)
 
-        predictions, original = self._convert_to_numeric_label(output)
+        predictions = self._convert_to_numeric_label(output)
         references = batch["labels"].tolist()
 
-        self.validation_metric.add_batch(predictions=predictions, references=references)
         self.log("val/seq_len", float(batch["input_ids"].shape[1]))
 
         return {
             "predictions": predictions,
-            "raw_predictions": original,
             "references": references,
         }
 
     def validation_epoch_end(self, outputs):
-        out = aggregate_outputs(outputs)
+        out = aggregate_outputs(outputs, self.val_dataloader_names)
 
-        metrics = self.validation_metric.compute()
-        cols, samples = format_results_as_table(
-            out["predictions"], out["raw_predictions"], out["references"]
-        )
+        for name, values in out.items():
+            kwargs = {
+                "predictions": values["predictions"],
+                "references": values["references"],
+            }
 
-        for metric in metrics.keys():
-            self.log(f"val/{metric}", torch.tensor(metrics[metric]), prog_bar=True)
+            metrics = self.validation_metric.compute(**kwargs)
+            cols, samples = format_results_as_table(**kwargs)
 
-        self.log("val/num_predictions", float(len(out["predictions"])))
-        self.log("val/num_references", float(len(out["references"])))
+            for metric in metrics.keys():
+                metric_name = f"val/{metric}/{name}"
+                self.log(metric_name, torch.tensor(metrics[metric]), prog_bar=True)
 
-        self.logger.log_text(key="val/classifications", columns=cols, data=samples)
+            self.log(f"val/num_predictions/{name}", float(len(values["predictions"])))
+            self.log(f"val/num_references/{name}", float(len(values["references"])))
+
+            log_text(
+                self.logger,
+                key=f"val/classifications/{name}",
+                columns=cols,
+                values=samples,
+            )
 
     def _convert_to_numeric_label(self, predicted_values: torch.Tensor) -> torch.Tensor:
         """
@@ -143,4 +166,4 @@ class TextClassificationModel(pl.LightningModule):
         )
         predicted_labels = [s2i(t) for t in prediction_texts]
 
-        return predicted_labels, prediction_texts
+        return predicted_labels

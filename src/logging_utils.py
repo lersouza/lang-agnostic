@@ -1,20 +1,9 @@
-import csv
-import dataclasses
-import os
+from typing import List
+from pytorch_lightning.loggers import LightningLoggerBase
 
 
-def log_artifact(dataclass, instances, logger, epoch, step, path, output_dir):
+def log_text(logger: LightningLoggerBase, key: str, columns: List[str], values: List[List[str]]):
+    if not logger:
+        return
 
-    filename = f"epoch={epoch}-step={step}"
-
-    with open(os.path.join(output_dir, filename), "w+") as log_file:
-        fieldnames = [f.name for f in dataclasses.fields(dataclass)]
-        writer = csv.DictWriter(log_file, fieldnames=fieldnames)
-
-        writer.writeheader()
-
-        for i in instances:
-            writer.writerow(dataclasses.asdict(i))
-
-    if logger and logger.experiment:
-        logger.experiment[path].track_files(os.path.join(output_dir, filename))
+    logger.log_text(key=key, columns=columns, data=values)

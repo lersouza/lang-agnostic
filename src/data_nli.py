@@ -86,6 +86,13 @@ class TextClassificationDataModule(LightningDataModule):
     def prepare_datasets(self):
         raise NotImplementedError()
 
+    def download_data(self):
+        """
+        Utility method for derived classes in order to only download the datasets.
+        This method is called during `prepare_data` hook.
+        """
+        pass
+
     def preprocess(self, dataset: Dataset, subset: str):
         features = dataset.map(
             self.prepare_input_sentence,
@@ -115,7 +122,7 @@ class TextClassificationDataModule(LightningDataModule):
         self.features[split].set_format(columns=self.model_features)
 
     def prepare_data(self) -> None:
-        self.prepare_datasets()  # Force data download in prepare_data
+        self.download_data()
 
     def setup(self, stage: str = None) -> None:
         self.data = self.prepare_datasets()

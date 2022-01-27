@@ -52,11 +52,11 @@ class TextClassificationTest(TestCase):
 
     def test_prepare_data(self, tokenizer_mock):
         module = TextClassificationDataModule("pretrained", 10, 10, 32)
-        module.prepare_datasets = Mock()
+        module.download_data = Mock()
 
         module.prepare_data()
 
-        module.prepare_datasets.assert_called_once()
+        module.download_data.assert_called_once()
 
     def test_setup(self, tokenizer_mock):
         module = TextClassificationDataModule("pretrained", 10, 10, 32)

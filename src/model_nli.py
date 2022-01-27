@@ -140,12 +140,14 @@ class TextClassificationModel(pl.LightningModule):
             cols, samples = format_results_as_table(**kwargs)
 
             for metric in metrics.keys():
-                avg_metrics[f"val/avg_{metric}"].append(metric_value)
-
                 metric_name = f"val/{metric}/{name}"
                 metric_value = float(metrics[metric])
 
                 self.log(metric_name, metric_value, prog_bar=False)
+
+                # Aggregate for an average value on prog bar
+                avg_metrics[f"val/avg_{metric}"].append(metric_value)
+
 
             self.log(f"val/num_predictions/{name}", float(len(values["predictions"])))
             self.log(f"val/num_references/{name}", float(len(values["references"])))

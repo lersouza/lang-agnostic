@@ -1,7 +1,10 @@
 import re
 
+import numpy as np
 import pytorch_lightning as pl
 import torch
+
+from collections import defaultdict
 
 from datasets import load_metric
 from transformers import AutoConfig, AutoTokenizer, AutoModelForSeq2SeqLM
@@ -110,7 +113,7 @@ class TextClassificationModel(pl.LightningModule):
 
         return output.loss
 
-    def validation_step(self, batch, batch_idx):
+    def validation_step(self, batch, batch_idx: int = 0, dataloader_idx: int = 0):
         output = self(**batch)
 
         predictions = self._convert_to_numeric_label(output)
@@ -119,12 +122,14 @@ class TextClassificationModel(pl.LightningModule):
         self.log("val/seq_len", float(batch["input_ids"].shape[1]))
 
         return {
+            "dataloader": dataloader_idx,
             "predictions": predictions,
             "references": references,
         }
 
     def validation_epoch_end(self, outputs):
         out = aggregate_outputs(outputs, self.val_dataloader_names)
+        avg_metrics = defaultdict(list)
 
         for name, values in out.items():
             kwargs = {
@@ -136,8 +141,12 @@ class TextClassificationModel(pl.LightningModule):
             cols, samples = format_results_as_table(**kwargs)
 
             for metric in metrics.keys():
+                avg_metrics[f"val/avg_{metric}"].append(metric_value)
+
                 metric_name = f"val/{metric}/{name}"
-                self.log(metric_name, torch.tensor(metrics[metric]), prog_bar=True)
+                metric_value = float(metrics[metric])
+
+                self.log(metric_name, metric_value, prog_bar=False)
 
             self.log(f"val/num_predictions/{name}", float(len(values["predictions"])))
             self.log(f"val/num_references/{name}", float(len(values["references"])))
@@ -148,6 +157,9 @@ class TextClassificationModel(pl.LightningModule):
                 columns=cols,
                 values=samples,
             )
+
+        for metric_name, metric_value in avg_metrics.items():
+            self.log(metric_name, np.average(metric_value), prog_bar=True)
 
     def _convert_to_numeric_label(self, predicted_values: torch.Tensor) -> torch.Tensor:
         """

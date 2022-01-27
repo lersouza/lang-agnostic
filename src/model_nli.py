@@ -30,7 +30,7 @@ def aggregate_outputs(outputs, dataloader_names):
         assert len(dataloader_names) == len(outputs)
 
         return {
-            k: aggregate_outputs(outputs[i]) for i, k in enumerate(dataloader_names)
+            k: aggregate_single_output(outputs[i]) for i, k in enumerate(dataloader_names)
         }
 
     return {dataloader_names[0]: aggregate_single_output(outputs)}
@@ -122,7 +122,6 @@ class TextClassificationModel(pl.LightningModule):
         self.log("val/seq_len", float(batch["input_ids"].shape[1]))
 
         return {
-            "dataloader": dataloader_idx,
             "predictions": predictions,
             "references": references,
         }

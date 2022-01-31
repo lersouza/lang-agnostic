@@ -21,7 +21,16 @@ trainer:
   gpus: 1
   max_epochs: 3
   precision: 32
+  val_check_interval: 0.2
   logger:
     class_path: pytorch_lightning.loggers.WandbLogger
     init_args:
         project: nli
+  callbacks:
+    - class_path: pytorch_lightning.callbacks.model_checkpoint.ModelCheckpoint
+      init_args:
+        filename: "mt5-xnli-epoch={epoch}-step={step}-acc={val/avg_accuracy:.2f}"
+        monitor: "val/avg_accuracy"
+        mode: "max"
+        save_last: true
+        auto_insert_metric_name: false

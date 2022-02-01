@@ -14,12 +14,13 @@ model:
 optimizer:
   class_path: transformers.optimization.Adafactor
   init_args:
-    lr: 0.001
+    lr: 0.0005
     scale_parameter: false
     relative_step: false
 trainer:
   gpus: 1
   max_epochs: 3
+  accumulate_grad_batches: 4
   precision: 32
   val_check_interval: 0.2
   logger:

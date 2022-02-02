@@ -16,4 +16,8 @@ cli = CustomCLI(
     TextClassificationDataModule,
     save_config_callback=None,
     subclass_mode_data=True,
+    run=False
 )
+
+cli.trainer.fit(cli.model, cli.datamodule)
+cli.trainer.test(ckpt_path="best")

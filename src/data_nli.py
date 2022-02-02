@@ -37,7 +37,7 @@ class TextClassificationDataModule(LightningDataModule):
         self.batch_size = batch_size
         self.dataloader_num_workers = dataloader_num_workers or os.cpu_count()
 
-        self.splits = {"train": "train", "validation": "validation"}
+        self.splits = {"train": "train", "validation": "validation", "test": "test"}
         self.splits.update(splits or {})
 
         self.data: Dict[str, Dataset] = {}
@@ -49,6 +49,10 @@ class TextClassificationDataModule(LightningDataModule):
         )
 
         self.save_hyperparameters()
+
+    @property
+    def all_splits(self):
+        return [self.splits[i] for i in ("train", "validation", "test")]
 
     @property
     def premise_attr(self):
@@ -70,6 +74,10 @@ class TextClassificationDataModule(LightningDataModule):
     def val_dataloader_names(self):
         return ["default"]
 
+    @property
+    def test_dataloader_names(self):
+        return ["default"]
+
     def train_dataloader(self) -> DataLoader:
         return self._create_dataloader(self.features["train"], shuffle=True)
 
@@ -81,6 +89,15 @@ class TextClassificationDataModule(LightningDataModule):
             ]
 
         return self._create_dataloader(self.features["validation"])
+
+    def test_dataloader(self) -> DataLoader:
+        if isinstance(self.features["test"], DatasetDict):
+            return [
+                self._create_dataloader(self.features["test"][s])
+                for s in self.test_dataloader_names
+            ]
+
+        return self._create_dataloader(self.features["test"])
 
     @abstractmethod
     def prepare_datasets(self):
@@ -127,7 +144,7 @@ class TextClassificationDataModule(LightningDataModule):
     def setup(self, stage: str = None) -> None:
         self.data = self.prepare_datasets()
 
-        for split in ("train", "validation"):
+        for split in ("train", "validation", "test"):
             self.features[split] = self.preprocess(self.data[split], split)
             self.prepare_features_for_model(split)
 
@@ -175,14 +192,13 @@ class TextClassificationDataModule(LightningDataModule):
 
 class Assin2DataModule(TextClassificationDataModule):
     def prepare_datasets(self):
-        dataset = load_dataset(
-            "assin2", split=[self.splits["train"], self.splits["validation"]]
-        )
+        dataset = load_dataset("assin2", split=self.all_splits)
 
         train = dataset[0].rename_column("entailment_judgment", "label")
         valid = dataset[1].rename_column("entailment_judgment", "label")
+        test = dataset[2].rename_column("entailment_judgment", "label")
 
-        return {"train": train, "validation": valid}
+        return {"train": train, "validation": valid, "test": test}
 
 
 class XnliDataModule(TextClassificationDataModule):
@@ -215,17 +231,21 @@ class XnliDataModule(TextClassificationDataModule):
     def val_dataloader_names(self):
         return self.XNLI_LANGUAGES
 
-    def prepare_datasets(self):
-        xnli_splits = [self.splits["train"], self.splits["validation"]]
-        xnli_dataset = load_dataset("xnli", "all_languages", split=xnli_splits)
+    @property
+    def test_dataloader_names(self):
+        return self.XNLI_LANGUAGES
 
-        train, valid = xnli_dataset
+    def prepare_datasets(self):
+        xnli_dataset = load_dataset("xnli", "all_languages", split=self.all_splits)
+
+        train, valid, test = xnli_dataset
         filter_train_data = lambda e: e["language"] == self.train_language
 
         train = train.map(self.flatten, batched=True).filter(filter_train_data)
         valid = self._build_language_validation(valid.map(self.flatten, batched=True))
+        test = self._build_language_validation(test.map(self.flatten, batched=True))
 
-        return {"train": train, "validation": valid}
+        return {"train": train, "validation": valid, "test": test}
 
     def _build_language_validation(self, xnli_validation: Dataset):
         # We load a dataset for each language available in XNLI

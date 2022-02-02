@@ -5,6 +5,7 @@ import pytorch_lightning as pl
 import torch
 
 from collections import defaultdict
+from typing import List
 
 from datasets import load_metric
 from transformers import AutoConfig, AutoTokenizer, AutoModelForSeq2SeqLM
@@ -30,7 +31,8 @@ def aggregate_outputs(outputs, dataloader_names):
         assert len(dataloader_names) == len(outputs)
 
         return {
-            k: aggregate_single_output(outputs[i]) for i, k in enumerate(dataloader_names)
+            k: aggregate_single_output(outputs[i])
+            for i, k in enumerate(dataloader_names)
         }
 
     return {dataloader_names[0]: aggregate_single_output(outputs)}
@@ -54,8 +56,6 @@ class TextClassificationModel(pl.LightningModule):
         self.save_hyperparameters()
 
         self.tokenizer = AutoTokenizer.from_pretrained(pretrained_model_name)
-        self.val_dataloader_names = None
-
         config = AutoConfig.from_pretrained(pretrained_model_name)
 
         if use_pretrained_weights:
@@ -65,7 +65,21 @@ class TextClassificationModel(pl.LightningModule):
         else:
             self.model = AutoModelForSeq2SeqLM.from_config(config)
 
-        self.validation_metric = load_metric(metric_name)
+        self.metric = load_metric(metric_name)
+
+    @property
+    def val_dataloader_names(self):
+        if self.trainer and self.trainer.datamodule:
+            return self.trainer.datamodule.val_dataloader_names
+
+        return ["default"]
+
+    @property
+    def test_dataloader_names(self):
+        if self.trainer and self.trainer.datamodule:
+            return self.trainer.datamodule.test_dataloader_names
+
+        return ["default"]
 
     def forward(
         self,
@@ -99,11 +113,6 @@ class TextClassificationModel(pl.LightningModule):
                 do_sample=False,
             )
 
-    def setup(self, stage):
-        self.val_dataloader_names = self.trainer.datamodule.val_dataloader_names or [
-            "default"
-        ]
-
     def training_step(self, batch, batch_idx):
         """Performs the training step, logging the loss."""
         output = self(**batch)
@@ -113,21 +122,35 @@ class TextClassificationModel(pl.LightningModule):
 
         return output.loss
 
-    def validation_step(self, batch, batch_idx: int = 0, dataloader_idx: int = 0):
+    def validation_step(self, *args, **kwargs):
+        return self.common_eval_step("val", *args, **kwargs)
+
+    def validation_epoch_end(self, outputs) -> None:
+        return self.common_eval_epoch_end("val", self.val_dataloader_names, outputs)
+
+    def test_step(self, *args, **kwargs):
+        return self.common_eval_step("test", *args, **kwargs)
+
+    def test_epoch_end(self, outputs) -> None:
+        return self.common_eval_epoch_end("test", self.test_dataloader_names, outputs)
+
+    def common_eval_step(
+        self, prefix: str, batch, batch_idx: int = 0, dataloader_idx: int = 0
+    ):
         output = self(**batch)
 
         predictions = self._convert_to_numeric_label(output)
         references = batch["labels"].tolist()
 
-        self.log("val/seq_len", float(batch["input_ids"].shape[1]))
+        self.log(f"{prefix}/seq_len", float(batch["input_ids"].shape[1]))
 
         return {
             "predictions": predictions,
             "references": references,
         }
 
-    def validation_epoch_end(self, outputs):
-        out = aggregate_outputs(outputs, self.val_dataloader_names)
+    def common_eval_epoch_end(self, prefix: str, dataloader_names: List[str], outputs):
+        out = aggregate_outputs(outputs, dataloader_names)
         avg_metrics = defaultdict(list)
 
         for name, values in out.items():
@@ -136,25 +159,28 @@ class TextClassificationModel(pl.LightningModule):
                 "references": values["references"],
             }
 
-            metrics = self.validation_metric.compute(**kwargs)
+            metrics = self.metric.compute(**kwargs)
             cols, samples = format_results_as_table(**kwargs)
 
             for metric in metrics.keys():
-                metric_name = f"val/{metric}/{name}"
+                metric_name = f"{prefix}/{metric}/{name}"
                 metric_value = float(metrics[metric])
 
                 self.log(metric_name, metric_value, prog_bar=False)
 
                 # Aggregate for an average value on prog bar
-                avg_metrics[f"val/avg_{metric}"].append(metric_value)
+                avg_metrics[f"{prefix}/avg_{metric}"].append(metric_value)
 
-
-            self.log(f"val/num_predictions/{name}", float(len(values["predictions"])))
-            self.log(f"val/num_references/{name}", float(len(values["references"])))
+            self.log(
+                f"{prefix}/num_predictions/{name}", float(len(values["predictions"]))
+            )
+            self.log(
+                f"{prefix}/num_references/{name}", float(len(values["references"]))
+            )
 
             log_text(
                 self.logger,
-                key=f"val/classifications/{name}",
+                key=f"{prefix}/classifications/{name}",
                 columns=cols,
                 values=samples,
             )

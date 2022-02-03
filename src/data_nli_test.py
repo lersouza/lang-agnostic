@@ -27,7 +27,7 @@ def create_mock_data(
     )
 
 
-@patch("data_nli.AutoTokenizer.from_pretrained", return_value=FakeTokenizer())
+@patch("data_base.AutoTokenizer.from_pretrained", return_value=FakeTokenizer())
 class TextClassificationTest(TestCase):
     def test_init(self, tokenizer_mock: Mock):
         module = TextClassificationDataModule(
@@ -85,7 +85,7 @@ class TextClassificationTest(TestCase):
         self.assertEqual(module.features["validation"], ["features_val"])
         self.assertEqual(module.features["test"], ["features_tst"])
 
-    @patch("data_nli.DataLoader")
+    @patch("data_base.DataLoader")
     def test_train_dataloader(self, dataloader_mock: Mock, tokenizer_mock):
         module = TextClassificationDataModule(
             "pretrained", 10, 10, 24, dataloader_num_workers=2
@@ -103,7 +103,7 @@ class TextClassificationTest(TestCase):
             num_workers=module.dataloader_num_workers,
         )
 
-    @patch("data_nli.DataLoader")
+    @patch("data_base.DataLoader")
     def test_val_dataloader(self, dataloader_mock: Mock, *args):
         module = TextClassificationDataModule(
             "pretrained", 10, 10, 24, dataloader_num_workers=2
@@ -121,7 +121,7 @@ class TextClassificationTest(TestCase):
             num_workers=module.dataloader_num_workers,
         )
 
-    @patch("data_nli.DataLoader")
+    @patch("data_base.DataLoader")
     def test_test_dataloader(self, dataloader_mock: Mock, *args):
         module = TextClassificationDataModule(
             "pretrained", 10, 10, 24, dataloader_num_workers=2
@@ -252,7 +252,7 @@ class TextClassificationTest(TestCase):
 
 
 @patch("data_nli.load_dataset")
-@patch("data_nli.AutoTokenizer.from_pretrained", return_value=FakeTokenizer())
+@patch("data_base.AutoTokenizer.from_pretrained", return_value=FakeTokenizer())
 class Assin2Test(TestCase):
     def test_load_datasets(self, _, load_dataset: Mock):
         datasets = Assin2DataModule("pretrained", 10, 10, 32).prepare_datasets()
@@ -286,7 +286,7 @@ class Assin2Test(TestCase):
         test_mock.rename_column.assert_called_with("entailment_judgment", "label")
 
 
-@patch("data_nli.AutoTokenizer.from_pretrained", return_value=FakeTokenizer())
+@patch("data_base.AutoTokenizer.from_pretrained", return_value=FakeTokenizer())
 class XnliTest(TestCase):
     @patch("data_nli.load_dataset", return_value=[Mock(), Mock(), Mock()])
     def test_load_datasets(self, load_dataset: Mock, _):

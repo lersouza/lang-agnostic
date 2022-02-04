@@ -73,7 +73,7 @@ class BaseSeq2SeqDataModule(LightningDataModule):
             self.tokenizer, padding=padding, max_length=max_length, return_tensors="pt"
         )
 
-        self.cache_dir = cache_dir or os.
+        self.cache_dir = cache_dir
         self.keep_in_memory = keep_in_memory
 
         self.save_hyperparameters()

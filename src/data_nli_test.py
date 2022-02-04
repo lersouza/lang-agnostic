@@ -27,6 +27,20 @@ def create_mock_data(
     )
 
 
+def create_xnli_mock_data() -> Dataset:
+    return Dataset.from_dict(
+        {
+            "premise": [{"l1": "premise_l1", "l2": "premise_l2", "l3": "premise_l3"}]
+            * 10,
+            "hypothesis": [
+                {"language": ["l1", "l2", "l3"], "translation": ["t1", "t2", "t3"]}
+            ]
+            * 10,
+            "label": [0] * 10,
+        }
+    )
+
+
 @patch("data_base.AutoTokenizer.from_pretrained", return_value=FakeTokenizer())
 class TextClassificationTest(TestCase):
     def test_init(self, tokenizer_mock: Mock):
@@ -64,14 +78,20 @@ class TextClassificationTest(TestCase):
         module.prepare_datasets = Mock(
             return_value={"train": ["train"], "validation": ["val"], "test": ["tst"]}
         )
-        module.preprocess = Mock(side_effect=[["features_train"], ["features_val"], ["features_tst"]])
+        module.preprocess = Mock(
+            side_effect=[["features_train"], ["features_val"], ["features_tst"]]
+        )
         module.prepare_features_for_model = Mock()
 
         module.setup("fit")
 
         module.prepare_datasets.assert_called_once()
         module.preprocess.assert_has_calls(
-            [call(["train"], "train"), call(["val"], "validation"), call(["tst"], "test")]
+            [
+                call(["train"], "train"),
+                call(["val"], "validation"),
+                call(["tst"], "test"),
+            ]
         )
         module.prepare_features_for_model.assert_has_calls(
             [call("train"), call("validation"), call("test")]
@@ -218,7 +238,7 @@ class TextClassificationTest(TestCase):
             @property
             def val_dataloader_names(self):
                 return ["pt", "en"]
-            
+
             @property
             def test_dataloader_names(self):
                 return ["pt", "en", "es"]
@@ -234,7 +254,9 @@ class TextClassificationTest(TestCase):
                 tst_data_3 = create_mock_data()
 
                 val_data = DatasetDict({"pt": val_data_1, "en": val_data_2})
-                tst_data = DatasetDict({"pt": tst_data_1, "en": tst_data_2, "es": tst_data_3})
+                tst_data = DatasetDict(
+                    {"pt": tst_data_1, "en": tst_data_2, "es": tst_data_3}
+                )
 
                 return {"train": train_data, "validation": val_data, "test": tst_data}
 
@@ -251,19 +273,35 @@ class TextClassificationTest(TestCase):
         self.assertEqual(len(tst_dataloaders), 3)
 
 
-@patch("data_nli.load_dataset")
+@patch("data_base.load_dataset")
 @patch("data_base.AutoTokenizer.from_pretrained", return_value=FakeTokenizer())
 class Assin2Test(TestCase):
     def test_load_datasets(self, _, load_dataset: Mock):
+        load_dataset.return_value = [
+            create_mock_data(label_column="entailment_judgment"),
+            create_mock_data(label_column="entailment_judgment"),
+            create_mock_data(label_column="entailment_judgment"),
+        ]
         datasets = Assin2DataModule("pretrained", 10, 10, 32).prepare_datasets()
 
-        load_dataset.assert_called_with("assin2", split=["train", "validation", "test"])
+        load_dataset.assert_called_with(
+            "assin2",
+            None,
+            split=["train", "validation", "test"],
+            cache_dir=None,
+            keep_in_memory=False,
+        )
 
         self.assertIn("train", datasets)
         self.assertIn("validation", datasets)
         self.assertIn("test", datasets)
 
     def test_load_datasets_splits(self, _, load_dataset: Mock):
+        load_dataset.return_value = [
+            create_mock_data(label_column="entailment_judgment"),
+            create_mock_data(label_column="entailment_judgment"),
+            create_mock_data(label_column="entailment_judgment"),
+        ]
         custom_splits = {"train": "train[:5%]", "validation": "validation_x"}
         expected_splits = ["train[:5%]", "validation_x", "test"]
 
@@ -271,27 +309,45 @@ class Assin2Test(TestCase):
             "pretrained", 10, 10, 32, splits=custom_splits
         ).prepare_datasets()
 
-        load_dataset.assert_called_with("assin2", split=expected_splits)
+        load_dataset.assert_called_with(
+            "assin2", None, split=expected_splits, cache_dir=None, keep_in_memory=False
+        )
 
     def test_dataset_columns(self, tokenizer, load_dataset):
-        train_mock, valid_mock, test_mock = MagicMock(), MagicMock(), MagicMock()
-        load_dataset.return_value = [train_mock, valid_mock, test_mock]
+        load_dataset.return_value = [
+            create_mock_data(label_column="entailment_judgment"),
+            create_mock_data(label_column="entailment_judgment"),
+            create_mock_data(label_column="entailment_judgment"),
+        ]
 
-        datasets: Dict[str, Mock] = Assin2DataModule(
-            "pretrained", 10, 10, 32
-        ).prepare_datasets()
+        datasets = Assin2DataModule("pretrained", 10, 10, 32).prepare_datasets()
 
-        train_mock.rename_column.assert_called_with("entailment_judgment", "label")
-        valid_mock.rename_column.assert_called_with("entailment_judgment", "label")
-        test_mock.rename_column.assert_called_with("entailment_judgment", "label")
+        self.assertIn("label", list(datasets["train"].features.keys()))
+        self.assertIn("label", list(datasets["validation"].features.keys()))
+        self.assertIn("label", list(datasets["test"].features.keys()))
 
 
 @patch("data_base.AutoTokenizer.from_pretrained", return_value=FakeTokenizer())
 class XnliTest(TestCase):
-    @patch("data_nli.load_dataset", return_value=[Mock(), Mock(), Mock()])
+    @patch("data_base.load_dataset", return_value=[Mock(), Mock(), Mock()])
     def test_load_datasets(self, load_dataset: Mock, _):
+        load_dataset.return_value = [
+            create_xnli_mock_data(),
+            create_xnli_mock_data(),
+            create_xnli_mock_data(),
+        ]
+
         datasets = XnliDataModule("pretrained", 10, 10, 32).prepare_datasets()
-        expected_lang_calls = [call(ANY, ANY, split=["train", "validation", "test"])]
+
+        expected_lang_calls = [
+            call(
+                ANY,
+                ANY,
+                split=["train", "validation", "test"],
+                cache_dir=None,
+                keep_in_memory=False,
+            )
+        ]
 
         load_dataset.assert_has_calls(expected_lang_calls)
 
@@ -299,10 +355,24 @@ class XnliTest(TestCase):
         self.assertIn("validation", datasets)
         self.assertIn("test", datasets)
 
-    @patch("data_nli.load_dataset", return_value=[Mock(), Mock(), Mock()])
+    @patch("data_base.load_dataset", return_value=[Mock(), Mock(), Mock()])
     def test_load_datasets_splits(self, load_dataset: Mock, _):
         custom_splits = {"train": "train[:5%]", "validation": "validation_x"}
-        expected_lang_calls = [call(ANY, ANY, split=["train[:5%]", "validation_x", "test"])]
+        expected_lang_calls = [
+            call(
+                ANY,
+                ANY,
+                split=["train[:5%]", "validation_x", "test"],
+                cache_dir=None,
+                keep_in_memory=False,
+            )
+        ]
+
+        load_dataset.return_value = [
+            create_xnli_mock_data(),
+            create_xnli_mock_data(),
+            create_xnli_mock_data(),
+        ]
 
         datasets = XnliDataModule(
             "pretrained", 10, 10, 32, splits=custom_splits

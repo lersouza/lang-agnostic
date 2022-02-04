@@ -71,13 +71,10 @@ class TextClassificationDataModule(BaseSeq2SeqDataModule):
 
 class Assin2DataModule(TextClassificationDataModule):
     def prepare_datasets(self):
-        dataset = load_dataset("assin2", split=self.all_splits)
+        dataset = self.load_dataset("assin2")
+        dataset.rename_column_("entailment_judgment", "label")
 
-        train = dataset[0].rename_column("entailment_judgment", "label")
-        valid = dataset[1].rename_column("entailment_judgment", "label")
-        test = dataset[2].rename_column("entailment_judgment", "label")
-
-        return {"train": train, "validation": valid, "test": test}
+        return dataset
 
 
 class XnliDataModule(TextClassificationDataModule):
@@ -115,16 +112,16 @@ class XnliDataModule(TextClassificationDataModule):
         return self.XNLI_LANGUAGES
 
     def prepare_datasets(self):
-        xnli_dataset = load_dataset("xnli", "all_languages", split=self.all_splits)
+        xnli_dataset = self.load_dataset("xnli", "all_languages")
+        xnli_dataset = xnli_dataset.map(self.flatten, batched=True)
 
-        train, valid, test = xnli_dataset
         filter_train_data = lambda e: e["language"] == self.train_language
 
-        train = train.map(self.flatten, batched=True).filter(filter_train_data)
-        valid = self._build_language_validation(valid.map(self.flatten, batched=True))
-        test = self._build_language_validation(test.map(self.flatten, batched=True))
+        xnli_dataset["train"] = xnli_dataset["train"].filter(filter_train_data)
+        xnli_dataset["validation"] = self._build_language_validation(xnli_dataset["validation"])
+        xnli_dataset["test"] = self._build_language_validation(xnli_dataset["test"])
 
-        return {"train": train, "validation": valid, "test": test}
+        return xnli_dataset
 
     def _build_language_validation(self, xnli_validation: Dataset):
         # We load a dataset for each language available in XNLI

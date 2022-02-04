@@ -2,16 +2,22 @@ import os
 
 from typing import Any, Dict, List, Union
 
-from datasets import Dataset, DatasetDict
+from datasets import Dataset, DatasetDict, load_dataset
 from pytorch_lightning import LightningDataModule
 from torch.utils.data import DataLoader
-from transformers import AutoTokenizer, DataCollatorWithPadding, PreTrainedTokenizer
+from transformers import (
+    AutoTokenizer,
+    DataCollatorWithPadding,
+    PreTrainedTokenizer,
+)
 
 
 class BaseSeq2SeqDataModule(LightningDataModule):
     """
     Represents a base class for Seq-to-Seq datasets.
     """
+    ALL_SPLITS = ["train", "validation", "test"]
+
 
     def __init__(
         self,
@@ -22,7 +28,33 @@ class BaseSeq2SeqDataModule(LightningDataModule):
         padding: str = "longest",
         splits: Dict[str, str] = None,
         dataloader_num_workers: int = None,
+        cache_dir: str = None,
+        keep_in_memory: bool = False,
     ):
+        """
+        Params:
+            tokenizer_name (`str`):
+                The name of the tokenizer to be used.
+            max_length (`int`):
+                The maximum lenght for model input.
+            max_target_length (`int`):
+                The maximum length for the expected output.
+            batch_size (`int`):
+                The number of instances to be included in a single batch.
+            padding (`str`):
+                The Huggingface Tokenizer's padding strategy for a batch.
+            splits (`Dict[str, str]`):
+                A mapping for the actual splits to be used from `datasets.load_dataset(split=)`.
+                For instance: if one would like to train in 20% of the dataset train set, the train
+                split would be train[:20%], so:
+                    `split={"train": "train[:20%]"}`.
+            dataloader_num_workers (`int`, default: `os.cpu_count()`):
+                The number of workers to be used by the data loaders.
+            cache_dir (`str`, default: `$HOME/.cache`):
+                The cache directory to store the dataset.
+            keep_in_memory (`bool`, default: `False`):
+                Whether or not to keep the whole dataset in memory.
+        """
         super().__init__()
 
         self.max_length = max_length
@@ -41,11 +73,10 @@ class BaseSeq2SeqDataModule(LightningDataModule):
             self.tokenizer, padding=padding, max_length=max_length, return_tensors="pt"
         )
 
-        self.save_hyperparameters()
+        self.cache_dir = cache_dir or os.
+        self.keep_in_memory = keep_in_memory
 
-    @property
-    def all_splits(self):
-        return [self.splits[i] for i in ("train", "validation", "test")]
+        self.save_hyperparameters()
 
     @property
     def model_features(self):
@@ -72,6 +103,22 @@ class BaseSeq2SeqDataModule(LightningDataModule):
 
     def prepare_datasets(self):
         raise NotImplementedError()
+
+    def load_dataset(
+        self, name: str, subset: str = None, split: Union[str, List[str]] = ALL_SPLITS,
+    ) -> DatasetDict:
+        datamodule_splits = split if isinstance(split, list) else [split]
+        actual_splits = [self.splits[s] for s in datamodule_splits]
+
+        datasets = load_dataset(
+            name,
+            subset,
+            split=actual_splits,
+            cache_dir=self.cache_dir,
+            keep_in_memory=self.keep_in_memory,
+        )
+
+        return DatasetDict({s: datasets[i] for i, s in enumerate(split)})
 
     def download_data(self):
         """

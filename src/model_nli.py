@@ -46,6 +46,7 @@ class TextClassificationModel(pl.LightningModule):
     def __init__(
         self,
         pretrained_model_name: str,
+        pretrained_model_revision: str = None,
         use_pretrained_weights: bool = True,
         max_target_length: int = 5,
         metric_name: str = "accuracy",
@@ -60,7 +61,10 @@ class TextClassificationModel(pl.LightningModule):
 
         if use_pretrained_weights:
             self.model = AutoModelForSeq2SeqLM.from_pretrained(
-                pretrained_model_name, from_flax=from_flax, config=config
+                pretrained_model_name,
+                from_flax=from_flax,
+                config=config,
+                revision=pretrained_model_revision,
             )
         else:
             self.model = AutoModelForSeq2SeqLM.from_config(config)

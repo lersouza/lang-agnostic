@@ -1,6 +1,6 @@
 import os
 
-from pytorch_lightning.utilities.cli import LightningCLI
+from pytorch_lightning.utilities.cli import LightningCLI, LightningArgumentParser
 
 
 class CustomCLI(LightningCLI):
@@ -12,11 +12,18 @@ class CustomCLI(LightningCLI):
         "precision",
     ]
 
+    def add_arguments_to_parser(self, parser: LightningArgumentParser) -> None:
+        parser.add_argument("--skip_test_after_fit", action="store_true")
+
     def before_instantiate_classes(self) -> None:
         os.environ["TOKENIZERS_PARALLELISM"] = "TRUE"
 
     def before_fit(self):
         self._log_additional_hyperparameters("fit")
+
+    def after_fit(self):
+        if not self.config["fit"].get("skip_test_after_fit", False):
+            self.trainer.test(ckpt_path="best", datamodule=self.datamodule)
 
     def _log_additional_hyperparameters(self, subcommand):
         if not self.trainer.logger:

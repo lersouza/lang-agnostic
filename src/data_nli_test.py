@@ -41,10 +41,16 @@ def create_xnli_mock_data() -> Dataset:
     )
 
 
+class MockedTextDataModule(TextClassificationDataModule):
+    def prepare_datasets(self):
+        pass  # Just to be used with mocks
+
+
+
 @patch("data_base.AutoTokenizer.from_pretrained", return_value=FakeTokenizer())
 class TextClassificationTest(TestCase):
     def test_init(self, tokenizer_mock: Mock):
-        module = TextClassificationDataModule(
+        module = MockedTextDataModule(
             "pretrained-model",
             10,
             2,
@@ -65,7 +71,7 @@ class TextClassificationTest(TestCase):
         self.assertEqual(module.dataloader_num_workers, 5)
 
     def test_prepare_data(self, tokenizer_mock):
-        module = TextClassificationDataModule("pretrained", 10, 10, 32)
+        module = MockedTextDataModule("pretrained", 10, 10, 32)
         module.download_data = Mock()
 
         module.prepare_data()
@@ -73,7 +79,7 @@ class TextClassificationTest(TestCase):
         module.download_data.assert_called_once()
 
     def test_setup(self, tokenizer_mock):
-        module = TextClassificationDataModule("pretrained", 10, 10, 32)
+        module = MockedTextDataModule("pretrained", 10, 10, 32)
 
         module.prepare_datasets = Mock(
             return_value={"train": ["train"], "validation": ["val"], "test": ["tst"]}
@@ -107,7 +113,7 @@ class TextClassificationTest(TestCase):
 
     @patch("data_base.DataLoader")
     def test_train_dataloader(self, dataloader_mock: Mock, tokenizer_mock):
-        module = TextClassificationDataModule(
+        module = MockedTextDataModule(
             "pretrained", 10, 10, 24, dataloader_num_workers=2
         )
         features = {"feat_one": [15] * 24, "feat_two": [12] * 24}
@@ -125,7 +131,7 @@ class TextClassificationTest(TestCase):
 
     @patch("data_base.DataLoader")
     def test_val_dataloader(self, dataloader_mock: Mock, *args):
-        module = TextClassificationDataModule(
+        module = MockedTextDataModule(
             "pretrained", 10, 10, 24, dataloader_num_workers=2
         )
         features = {"feat_one": [15] * 24, "feat_two": [12] * 24}
@@ -143,7 +149,7 @@ class TextClassificationTest(TestCase):
 
     @patch("data_base.DataLoader")
     def test_test_dataloader(self, dataloader_mock: Mock, *args):
-        module = TextClassificationDataModule(
+        module = MockedTextDataModule(
             "pretrained", 10, 10, 24, dataloader_num_workers=2
         )
         features = {"feat_one": [15] * 24, "feat_two": [12] * 24}
@@ -160,7 +166,7 @@ class TextClassificationTest(TestCase):
         )
 
     def test_preprocess(self, tokenizer_mock: Mock):
-        module = TextClassificationDataModule("pretrained", 10, 10, 32)
+        module = MockedTextDataModule("pretrained", 10, 10, 32)
         dataset = create_mock_data()
 
         result = module.preprocess(dataset, "train")
@@ -438,3 +444,30 @@ class XnliTest(TestCase):
         self.assertListEqual(result["premise"], expected_premise)
         self.assertListEqual(result["hypothesis"], expected_hypothesis)
         self.assertListEqual(result["label"], expected_labels)
+
+    def test_filter_by_lang(self, _):
+        dataset = Dataset.from_dict(
+            {
+                "language": ["pt", "en", "fr", "pt", "es"],
+                "texts": ["portuguese", "english", "french", "portuguese", "spanish"],
+            }
+        )
+
+        pt_expected = ["portuguese", "portuguese"]
+        en_expected = ["english"]
+        es_expected = ["spanish"]
+        fr_expected = ["french"]
+
+        by_lang = DatasetDict(
+            {
+                lang: dataset.filter(
+                    XnliDataModule.filter_data_by_lang, fn_kwargs={"language": lang}
+                )
+                for lang in ["pt", "en", "es", "fr"]
+            }
+        )
+
+        self.assertListEqual(by_lang["pt"]["texts"], pt_expected)
+        self.assertListEqual(by_lang["en"]["texts"], en_expected)
+        self.assertListEqual(by_lang["es"]["texts"], es_expected)
+        self.assertListEqual(by_lang["fr"]["texts"], fr_expected)

@@ -1,6 +1,7 @@
 import abc
 
 from collections import defaultdict
+from typing import Dict
 from datasets import Dataset, DatasetDict
 
 from data_base import BaseSeq2SeqDataModule
@@ -117,22 +118,33 @@ class XnliDataModule(TextClassificationDataModule):
         xnli_dataset = self.load_dataset("xnli", "all_languages")
         xnli_dataset = xnli_dataset.map(self.flatten, batched=True)
 
-        filter_train_data = lambda e: e["language"] == self.train_language
-
-        xnli_dataset["train"] = xnli_dataset["train"].filter(filter_train_data)
-        xnli_dataset["validation"] = self._build_language_validation(xnli_dataset["validation"])
-        xnli_dataset["test"] = self._build_language_validation(xnli_dataset["test"])
+        xnli_dataset["train"] = xnli_dataset["train"].filter(
+            self.filter_data_by_lang, fn_kwargs={"language": self.train_language}
+        )
+        xnli_dataset["validation"] = self._build_lang_valid_set(
+            xnli_dataset["validation"]
+        )
+        xnli_dataset["test"] = self._build_lang_valid_set(xnli_dataset["test"])
 
         return xnli_dataset
 
-    def _build_language_validation(self, xnli_validation: Dataset):
+    def _build_lang_valid_set(self, xnli_validation: Dataset):
         # We load a dataset for each language available in XNLI
         return DatasetDict(
             {
-                lang: xnli_validation.filter(lambda e: e["language"] == lang)
+                lang: xnli_validation.filter(
+                    self.filter_data_by_lang, fn_kwargs={"language": lang}
+                )
                 for lang in self.XNLI_LANGUAGES
             }
         )
+
+    @staticmethod
+    def filter_data_by_lang(example: Dict, language: str):
+        """
+        Helper function to filter a Dataset by language.
+        """
+        return example["language"] == language
 
     @staticmethod
     def flatten(examples):

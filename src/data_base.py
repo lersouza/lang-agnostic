@@ -49,12 +49,13 @@ class BaseSeq2SeqDataModule(LightningDataModule, ABC):
                 For instance: if one would like to train in 20% of the dataset train set, the train
                 split would be train[:20%], so:
                     `split={"train": "train[:20%]"}`.
-            dataloader_num_workers (`int`, default: `os.cpu_count()`):
+            dataloader_num_workers (`int`, default: None):
                 The number of workers to be used by the data loaders.
             cache_dir (`str`, default: `$HOME/.cache`):
                 The cache directory to store the dataset.
             keep_in_memory (`bool`, default: `False`):
                 Whether or not to keep the whole dataset in memory.
+                Note: If keep_in_memory is set to `True`, Dataset cache will not be used.
         """
         super().__init__()
 

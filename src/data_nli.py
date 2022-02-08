@@ -1,10 +1,12 @@
+import abc
+
 from collections import defaultdict
-from datasets import Dataset, DatasetDict, load_dataset
+from datasets import Dataset, DatasetDict
 
 from data_base import BaseSeq2SeqDataModule
 
 
-class TextClassificationDataModule(BaseSeq2SeqDataModule):
+class TextClassificationDataModule(BaseSeq2SeqDataModule, abc.ABC):
     """
     Represents a base class for Text-Classification datasets.
 

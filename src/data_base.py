@@ -1,5 +1,6 @@
 import os
 
+from abc import ABC, abstractmethod
 from typing import Any, Dict, List, Union
 
 from datasets import Dataset, DatasetDict, load_dataset
@@ -12,7 +13,7 @@ from transformers import (
 )
 
 
-class BaseSeq2SeqDataModule(LightningDataModule):
+class BaseSeq2SeqDataModule(LightningDataModule, ABC):
     """
     Represents a base class for Seq-to-Seq datasets.
     """
@@ -101,12 +102,38 @@ class BaseSeq2SeqDataModule(LightningDataModule):
     def test_dataloader(self) -> DataLoader:
         return self._create_multiple_dataloaders("test", self.test_dataloader_names)
 
-    def prepare_datasets(self):
+    def predict_dataloader(self) -> DataLoader:
+        raise NotImplementedError()
+
+    @abstractmethod
+    def prepare_datasets(self) -> DatasetDict:
         raise NotImplementedError()
 
     def load_dataset(
-        self, name: str, subset: str = None, split: Union[str, List[str]] = ALL_SPLITS,
+        self, name: str, subset: str = None, split: Union[str, List[str]] = None,
     ) -> DatasetDict:
+        """
+        Utility function to load a dataset from Huggingface's datasets library.
+
+        Parameters:
+
+            name (`str`):
+                The name of the dataset to load
+
+            subset (`str`, optional, Default = None):
+                The subset name to load. For instance, `load_dataset("xnli", "all_languages")`
+
+            split (`str` or `List[str]`. Defaults to `BaseSeq2SeqDataModule.ALL_SPLITS`):
+                The name of the splits (`train`, `validation`, `test`) to load for the dataset.
+                The names may be translated before passed to the HF's `load_dataset` function
+                based on `self.splits` mapping passed through this class constructor.
+
+                For instance, `validation` split may be translated into `validation_matched`
+                if `self.splits["validation"]` is set to `"validation_matched"`.
+
+        """
+        split = split or BaseSeq2SeqDataModule.ALL_SPLITS
+
         datamodule_splits = split if isinstance(split, list) else [split]
         actual_splits = [self.splits[s] for s in datamodule_splits]
 

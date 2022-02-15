@@ -5,6 +5,7 @@ from argparse import Namespace
 from unittest.mock import Mock, patch
 
 from model_base import BaseSeq2SeqModel
+from model_nli import TextClassificationModel
 
 
 class FakeModelForTesting(BaseSeq2SeqModel):
@@ -46,6 +47,10 @@ class FakeModelForTesting(BaseSeq2SeqModel):
 
     def __call__(self, *args, **kwargs):
         return self.forward(*args, **kwargs)
+
+
+class FakeNliModelForTesting(FakeModelForTesting, TextClassificationModel):
+    pass
 
 
 class BaseModelTestCase(unittest.TestCase):
@@ -147,7 +152,7 @@ class BaseModelTestCase(unittest.TestCase):
             "input_ids": torch.tensor([[1, 2, 3, 4], [1, 2, 3, 4]]),
             "attention_mask": [[1, 1, 1, 1], [1, 1, 1, 1]],
             "target_ids": [[4], [5]],
-            "label": [1, 1, 1, 1],
+            "labels": [1, 1, 1, 1],
         }
 
         model.training_step(batch, 0)
@@ -171,7 +176,7 @@ class BaseModelTestCase(unittest.TestCase):
             "input_ids": torch.tensor([[1, 2, 3, 4], [1, 2, 3, 4]]),
             "attention_mask": [[1, 1, 1, 1], [1, 1, 1, 1]],
             "target_ids": [[4], [5]],
-            "label": [1, 1, 1, 1],
+            "labels": [1, 1, 1, 1],
         }
 
         result = model.validation_step(batch, 0, 0)
@@ -207,3 +212,49 @@ class BaseModelTestCase(unittest.TestCase):
         actual = BaseSeq2SeqModel.aggregate_outputs(dataloader_0_outs, dataloader_names)
 
         self.assertEqual(expected, actual)
+
+
+class ModelNliTestCase(unittest.TestCase):
+    def test_format_model_predictions(self):
+
+        batch = {
+            "input_ids": torch.rand(
+                (4, 64)
+            ),  # a random input of 4 samples of 64 input length
+            "attention_mask": torch.ones((4, 64)),
+            "target_ids": torch.rand((4, 5)),
+            "labels": [0, 1, 1, 0],
+        }
+        output = torch.rand((4, 5))
+
+        # We'll force the batch decoding to be a fixed result, regardless the model output
+        tokenizer_mock = Mock()
+        tokenizer_mock.batch_decode = Mock(return_value=["0", "1", "1", "error"])
+
+        model = FakeNliModelForTesting()
+        model.tokenizer = tokenizer_mock
+
+        predictions = model.format_model_predictions(0, "language_ds", batch, output)
+
+        # Check if the tokenizer is called with the model's output and skip special tokens
+        tokenizer_mock.batch_decode.assert_called_with(output, skip_special_tokens=True)
+
+        # Check if the conversion function works properly
+        self.assertListEqual(predictions, [0, 1, 1, -1])
+
+    def test_format_batch_references(self):
+        expected_references = [0, 1, 1, 0]
+
+        batch = {
+            "input_ids": torch.rand(
+                (4, 64)
+            ),  # a random input of 4 samples of 64 input length
+            "attention_mask": torch.ones((4, 64)),
+            "target_ids": torch.rand((4, 5)),
+            "labels": torch.tensor(expected_references),
+        }
+        model = FakeNliModelForTesting()
+        references = model.format_batch_references(0, "some_name", batch)
+
+        # Check if the method return the correct references
+        self.assertListEqual(references, expected_references)

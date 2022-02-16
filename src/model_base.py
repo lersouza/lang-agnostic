@@ -1,10 +1,12 @@
 from abc import abstractmethod
 from collections import defaultdict
 from typing import Any, Dict, List, Tuple, Union
-from datasets import load_metric
+
 import numpy as np
-from pytorch_lightning import LightningModule
 import torch
+
+from datasets import load_metric
+from pytorch_lightning import LightningModule
 from transformers import AutoConfig, AutoModelForSeq2SeqLM, AutoTokenizer
 
 from logging_utils import log_text
@@ -15,6 +17,8 @@ class BaseSeq2SeqModel(LightningModule):
     A base model for using Transformer's Seq2Seq API in Pytorch Lightning.
     """
 
+    # pylint: disable=arguments-differ
+
     def __init__(
         self,
         pretrained_model_name: str,
@@ -24,6 +28,8 @@ class BaseSeq2SeqModel(LightningModule):
         metric_name: str = "accuracy",
         from_flax: bool = False,
     ):
+        # pylint: disable=unused-argument
+
         super().__init__()
 
         self.save_hyperparameters()
@@ -87,7 +93,6 @@ class BaseSeq2SeqModel(LightningModule):
             output (torch.Tensor):
                 The model's computed output for the batch.
         """
-        pass
 
     @abstractmethod
     def format_batch_references(
@@ -109,7 +114,6 @@ class BaseSeq2SeqModel(LightningModule):
             batch (Dict[Union[Tensor, Any]]):
                 The batch for which predictions were made.
         """
-        pass
 
     def format_outputs_for_logging(self, predictions, references) -> Tuple:
         """
@@ -123,7 +127,9 @@ class BaseSeq2SeqModel(LightningModule):
                 A list of lists cotaining all examples to be logged, described
                 by its columns.
         """
-        return None
+        # pylint: disable=unused-argument
+
+        return ()
 
     def forward(
         self,
@@ -134,7 +140,7 @@ class BaseSeq2SeqModel(LightningModule):
     ):
         """Runs the network for prediction (logits) and loss calculation."""
 
-        if self.training == True:
+        if self.training is True:
             # Changing pad token in target labels
             # See: https://huggingface.co/docs/transformers/model_doc/t5#transformers.T5ForConditionalGeneration
             target_labels = target_ids.masked_fill(
@@ -159,6 +165,8 @@ class BaseSeq2SeqModel(LightningModule):
 
     def training_step(self, batch, batch_idx):
         """Performs the default training step, logging the loss and seq length for the batch."""
+        # pylint: disable=unused-argument
+
         output = self(**batch)
 
         self.log("train/loss", output.loss)
@@ -184,6 +192,28 @@ class BaseSeq2SeqModel(LightningModule):
         dataloader_idx: int = 0,
         dataloader_names: List[str] = None,
     ):
+        """
+        Performs an evaluation step, common to both validation and test phases.
+
+        Parameters:
+
+            prefix (str):
+                A prefix to be appended to logs identifying the phase (i.e., val or test).
+
+            batch (Dict[str, Any]):
+                The batch to process during this step.
+
+            batch_idx (int, optional, default = 0):
+                The index of the batch in the whole dataset.
+
+            dataloader_idx (int, optional, default = 0):
+                The index of the dataloader being processed when using multiple ones.
+
+            dataloader_names (List[str], optional. If None, `["default"]` is used):
+                The names of the known dataloaders.
+        """
+        # pylint: disable=unused-argument
+
         dataloader_names = dataloader_names or ["default"]
 
         output = self(**batch)
@@ -211,10 +241,25 @@ class BaseSeq2SeqModel(LightningModule):
     def validation_epoch_end(self, outputs) -> None:
         return self.common_eval_epoch_end("val", self.val_dataloader_names, outputs)
 
-    def test_step(self, *args, **kwargs):
-        return self.common_eval_step("test", *args, **kwargs)
+    def test_epoch_end(self, outputs) -> None:
+        return self.common_eval_epoch_end("test", self.test_dataloader_names, outputs)
 
     def common_eval_epoch_end(self, prefix: str, dataloader_names: List[str], outputs):
+        """
+        Performs an evaluation final processing at the epoch end,
+        common to both validation and test phases.
+
+        Parameters:
+
+            prefix (str):
+                A prefix to be appended to logs identifying the phase (i.e., val or test).
+
+            dataloader_names (List[str], optional. If None, `["default"]` is used):
+                The names of the known dataloaders.
+
+            outputs (List[Any]):
+                A list containing the outputs produced during steps.
+        """
         out = self.aggregate_outputs(outputs, dataloader_names)
         avg_metrics = defaultdict(list)
 

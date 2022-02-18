@@ -14,7 +14,7 @@ for exp in $EXPERIMENTS; do
         echo "====================================================="
         echo "Starting experiment $exp with seed $seed ..."
         
-        # python src/train_nli.py --config $exp --seed_everything $seed --data.init_args.cache_dir=$CACHE_DIR
+        python src/train_nli.py --config $exp --seed_everything $seed --data.init_args.cache_dir=$CACHE_DIR
 
         echo "Finished experiment $exp with seed $seed!"
         echo "====================================================="

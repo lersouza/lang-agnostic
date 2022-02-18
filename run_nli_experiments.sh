@@ -1,5 +1,6 @@
 BASE_PATH=${1:-"./configs/"}
 CACHE_DIR=${2:-"./.cache"}
+DEBUG_MODE=${3:-"0"}
 
 EXPERIMENTS=$(find $BASE_PATH -type f)
 NUM_OF_EXPETIMENTS=$(echo "$EXPERIMENTS" | wc -l)
@@ -14,7 +15,11 @@ for exp in $EXPERIMENTS; do
         echo "====================================================="
         echo "Starting experiment $exp with seed $seed ..."
         
-        python src/train_nli.py fit --config $exp --seed_everything $seed --data.init_args.cache_dir=$CACHE_DIR
+        if [ $DEBUG_MODE == "0" ]; then
+            python src/train_nli.py fit --config $exp --seed_everything $seed --data.init_args.cache_dir=$CACHE_DIR
+        else
+            echo "Will run: python src/train_nli.py fit --config $exp --seed_everything $seed --data.init_args.cache_dir=$CACHE_DIR"
+        fi
 
         echo "Finished experiment $exp with seed $seed!"
         echo "====================================================="

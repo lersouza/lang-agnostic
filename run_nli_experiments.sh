@@ -1,8 +1,10 @@
+#!/bin/bash
+
 BASE_PATH=${1:-"./configs/"}
 CACHE_DIR=${2:-"./.cache"}
 DEBUG_MODE=${3:-"0"}
 
-EXPERIMENTS=$(find $BASE_PATH -type f)
+EXPERIMENTS=$(find $BASE_PATH -type f -name "*.yaml")
 NUM_OF_EXPETIMENTS=$(echo "$EXPERIMENTS" | wc -l)
 SEEDS=(42 123 1337)
 
@@ -14,12 +16,26 @@ for exp in $EXPERIMENTS; do
     for seed in "${SEEDS[@]}"; do
         echo "====================================================="
         echo "Starting experiment $exp with seed $seed ..."
-        
-        if [ $DEBUG_MODE == "0" ]; then
-            python src/train_nli.py fit --config $exp --seed_everything $seed --data.init_args.cache_dir=$CACHE_DIR
-        else
-            echo "Will run: python src/train_nli.py fit --config $exp --seed_everything $seed --data.init_args.cache_dir=$CACHE_DIR"
+
+        if [ -f "$exp.$seed.finished" ]; then
+            echo "Experiment $exp already finished previously!"
+            echo "====================================================="
+
+            continue
         fi
+        
+        CURRENT_RUN_ID=$(cat $exp.$seed.inprogress 2>/dev/null)
+        COMMAND="python src/train_nli.py fit --config $exp --seed_everything $seed --data.init_args.cache_dir=$CACHE_DIR"
+        
+        if [ ! -z "$CURRENT_RUN_ID" ]; then
+            COMMAND="$COMMAND --trainer.logger.id=$CURRENT_RUN_ID"
+        fi
+
+        if [ $DEBUG_MODE == "1" ]; then
+            COMMAND="echo $COMMAND"
+        fi
+
+        $COMMAND && touch "$exp.$seed.finished"
 
         echo "Finished experiment $exp with seed $seed!"
         echo "====================================================="

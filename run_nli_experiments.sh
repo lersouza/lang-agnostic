@@ -29,6 +29,10 @@ for exp in $EXPERIMENTS; do
         
         if [ ! -z "$CURRENT_RUN_ID" ]; then
             COMMAND="$COMMAND --trainer.logger.id=$CURRENT_RUN_ID"
+
+            if [ -f "./nli/$CURRENT_RUN_ID/checkpoints/last.ckpt" ]; then
+                COMMAND="$COMMAND --ckpt_path=./nli/$CURRENT_RUN_ID/checkpoints/last.ckpt"
+            fi
         fi
 
         if [ $DEBUG_MODE == "1" ]; then

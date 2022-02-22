@@ -28,7 +28,7 @@ for exp in $EXPERIMENTS; do
         COMMAND="python src/train_nli.py fit --config $exp --seed_everything $seed --data.init_args.cache_dir=$CACHE_DIR"
         
         if [ ! -z "$CURRENT_RUN_ID" ]; then
-            COMMAND="$COMMAND --trainer.logger.id=$CURRENT_RUN_ID"
+            COMMAND="$COMMAND --trainer.logger.init_args.id=$CURRENT_RUN_ID"
 
             if [ -f "./nli/$CURRENT_RUN_ID/checkpoints/last.ckpt" ]; then
                 COMMAND="$COMMAND --ckpt_path=./nli/$CURRENT_RUN_ID/checkpoints/last.ckpt"

@@ -10,6 +10,10 @@ checkpoints/
 lightning_logs/
 configs/neptune-logger.yaml
 
+# Job control
+*.finished
+*.inprogress
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]

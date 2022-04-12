@@ -1,0 +1,45 @@
+seed_everything: 42
+data:
+  class_path: data_nli.XnliDataModule
+  init_args:
+    tokenizer_name: "hugo/byt5-mono-zh-v1"
+    batch_size: 16
+    max_length: 1024
+    max_target_length: 5
+    train_language: vi
+    dataloader_num_workers: 6
+model:
+  pretrained_model_name: "hugo/byt5-mono-zh-v1"
+  pretrained_model_revision: "ccb30bb94be2a65077483371672d1d04388d77d9"
+  from_flax: true
+  use_pretrained_weights: true
+  max_target_length: 5
+optimizer:
+  class_path: transformers.optimization.Adafactor
+  init_args:
+    lr: 0.0001
+    scale_parameter: false
+    relative_step: false
+trainer:
+  gpus: 1
+  max_epochs: 10
+  accumulate_grad_batches: 4
+  precision: 32
+  val_check_interval: 0.2
+  logger:
+    class_path: pytorch_lightning.loggers.WandbLogger
+    init_args:
+      project: nli
+  callbacks:
+    - class_path: pytorch_lightning.callbacks.model_checkpoint.ModelCheckpoint
+      init_args:
+        filename: "flang-nli-zh-vi-epoch={epoch}-step={step}-acc={val/accuracy/vi:.4f}"
+        monitor: "val/accuracy/vi"
+        mode: "max"
+        save_last: true
+        auto_insert_metric_name: false
+    - class_path: pytorch_lightning.callbacks.early_stopping.EarlyStopping
+      init_args:
+        monitor: "val/accuracy/vi"
+        mode: "max"
+        patience: 5

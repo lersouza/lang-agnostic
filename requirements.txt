@@ -1,10 +1,12 @@
 datasets==1.15.1
-pytorch-lightning==1.5.8
-transformers==4.12.3
-protobuf==3.9.2
+flax
 jsonargparse[signatures]
+protobuf==3.9.2
+pytorch-lightning==1.6.1
 sentencepiece
+transformers==4.12.3
 
 # Loggers
 wandb
 neptune-client
+

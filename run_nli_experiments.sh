@@ -12,6 +12,10 @@ echo "Running all experiments in ${BASE_PATH}. Cache dir is $CACHE_DIR"
 echo "====> Found $NUM_OF_EXPETIMENTS Experiments."
 echo ""
 
+echo "Login to Wandb"
+wandb login
+echo ""
+
 for exp in $EXPERIMENTS; do
     for seed in "${SEEDS[@]}"; do
         echo "====================================================="

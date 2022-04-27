@@ -1,3 +1,5 @@
+""" A base Module for Seq2Seq Models. """
+
 from abc import abstractmethod
 from collections import defaultdict
 from typing import Any, Dict, List, Tuple, Union

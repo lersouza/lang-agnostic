@@ -1,3 +1,5 @@
+""" Data modules for NLI Task """
+
 import abc
 
 from collections import defaultdict
@@ -17,14 +19,17 @@ class TextClassificationDataModule(BaseSeq2SeqDataModule, abc.ABC):
 
     @property
     def premise_attr(self):
+        """ The name of the premise column in the dataset. """
         return "premise"
 
     @property
     def hypothesis_attr(self):
+        """ The name of the hypothesis column in the dataset. """
         return "hypothesis"
 
     @property
     def label_attr(self):
+        """ The name of the label column in the dataset. """
         return "label"
 
     @property
@@ -63,6 +68,13 @@ class TextClassificationDataModule(BaseSeq2SeqDataModule, abc.ABC):
         hypothesis_attr: str = "hypothesis",
         label_attr: str = "label",
     ):
+        """
+        Creates an `input` and `target` columns in the example for holding formatted
+        model input and expected output.
+
+        Input is formatted as `xnli: premise: <<premise>> hypothesis: <<hypothesis>>.
+        Target is a string representing the label id: Ex: `"0"`.
+        """
         return {
             "input": (
                 f"xnli: premise: {example[premise_attr]} "
@@ -73,6 +85,8 @@ class TextClassificationDataModule(BaseSeq2SeqDataModule, abc.ABC):
 
 
 class Assin2DataModule(TextClassificationDataModule):
+    """ A data module for the ASSIN2 Portuguese Dataset."""
+
     def prepare_datasets(self):
         dataset = self.load_dataset("assin2")
         dataset.rename_column_("entailment_judgment", "label")
@@ -81,6 +95,7 @@ class Assin2DataModule(TextClassificationDataModule):
 
 
 class XnliDataModule(TextClassificationDataModule):
+    """ A data module for the XNLI dataset. """
     XNLI_LANGUAGES = [
         "ar",
         "bg",
@@ -149,10 +164,12 @@ class XnliDataModule(TextClassificationDataModule):
     @staticmethod
     def flatten(examples):
         """
-        XNLI, according to https://huggingface.co/datasets/xnli#data-instances, has the following format:
+        XNLI, according to https://huggingface.co/datasets/xnli#data-instances,
+        has the following format:
         {
             "hypothesis": {
-                \"language\": [\"ar\", \"bg\", \"de\", \"el\", \"en\", \"es\", \"fr\", \"hi\", \"ru\", \"sw\", \"th\", \"tr\", \"ur\", \"vi\", \"zh\"],
+                \"language\": [\"ar\", \"bg\", \"de\", \"el\", \"en\", \"es\", \"fr\", \"hi\",
+                               \"ru\", \"sw\", \"th\", \"tr\", \"ur\", \"vi\", \"zh\"],
                 \"translation\": [\"احد اع...",
             }
             "label": 0,
@@ -169,15 +186,15 @@ class XnliDataModule(TextClassificationDataModule):
             'hypothesis': 'You lose the things to the following level if the people recall .',
             'label': 0,
             'language': 'en',
-            'premise': 'you know during the season and i guess at at your level uh you lose them to the next ...
+            'premise': 'you know during the season and i guess at at ...
         }
         """
-        h = [
+        hypothesis = [
             (i, lang, trans)
             for i, ex in enumerate(examples["hypothesis"])
             for lang, trans in zip(ex["language"], ex["translation"])
         ]
-        p = [
+        premises = [
             (i, lang, prem)
             for i, ex in enumerate(examples["premise"])
             for lang, prem in ex.items()
@@ -185,11 +202,11 @@ class XnliDataModule(TextClassificationDataModule):
 
         features = defaultdict(list)
 
-        for (i, l, hy), (_, _, pr) in zip(h, p):
+        for (i, lang, hypo), (_, _, prem) in zip(hypothesis, premises):
 
-            features["premise"].append(pr)
-            features["hypothesis"].append(hy)
-            features["language"].append(l)
+            features["premise"].append(prem)
+            features["hypothesis"].append(hypo)
+            features["language"].append(lang)
             features["label"].append(examples["label"][i])
 
         return features

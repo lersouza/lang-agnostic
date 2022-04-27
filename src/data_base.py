@@ -1,7 +1,9 @@
+""" A base module for creating Seq2Seq data modules. """
+
 import os
 
-from abc import ABC, abstractmethod
 from typing import Any, Dict, List, Union
+from abc import ABC, abstractmethod
 
 from datasets import Dataset, DatasetDict, load_dataset
 from pytorch_lightning import LightningDataModule
@@ -82,14 +84,19 @@ class BaseSeq2SeqDataModule(LightningDataModule, ABC):
 
     @property
     def model_features(self):
+        """
+        Returns a list of attributes from the dataset that should be included in the batches.
+        """
         return ["input_ids", "attention_mask", "target_ids"]
 
     @property
     def val_dataloader_names(self):
+        """ A list containing the names of the dataloaders returned by `val_dataloader` method. """
         return ["default"]
 
     @property
     def test_dataloader_names(self):
+        """ A list containing the names of the dataloaders returned by `test_dataloader` method. """
         return ["default"]
 
     def train_dataloader(self) -> DataLoader:
@@ -108,6 +115,10 @@ class BaseSeq2SeqDataModule(LightningDataModule, ABC):
 
     @abstractmethod
     def prepare_datasets(self) -> DatasetDict:
+        """
+        Returns a `DatasetDict` with train, validation and test splits to be used.
+        The data for each split should be raw data that will be processed by the `preprocess` method.
+        """
         raise NotImplementedError()
 
     def load_dataset(
@@ -160,9 +171,16 @@ class BaseSeq2SeqDataModule(LightningDataModule, ABC):
         Subclasses of this may implement this method in order to provide
         proper handling of data to pass it to the model (tokenize, etc).
         """
+        # pylint: disable=unused-argument
+        # subset is an argument that may be useful for derived classes
+
         return dataset
 
     def prepare_features_for_model(self, split: str):
+        """
+        Format the `self.features` attribute by selecting the appropriate columns to be used 
+        while forming batches (based on `self.model_attributes` property).
+        """
         self.features[split].set_format(columns=self.model_features)
 
     def prepare_data(self) -> None:
@@ -228,3 +246,4 @@ class BaseSeq2SeqDataModule(LightningDataModule, ABC):
         model_inputs["target_ids"] = labels["input_ids"]
 
         return model_inputs
+

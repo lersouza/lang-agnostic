@@ -117,7 +117,9 @@ class BaseSeq2SeqDataModule(LightningDataModule, ABC):
     def prepare_datasets(self) -> DatasetDict:
         """
         Returns a `DatasetDict` with train, validation and test splits to be used.
-        The data for each split should be raw data that will be processed by the `preprocess` method.
+
+        The data for each split should be raw data that will be processed
+        by the `preprocess` method.
         """
         raise NotImplementedError()
 
@@ -164,7 +166,6 @@ class BaseSeq2SeqDataModule(LightningDataModule, ABC):
         Utility method for derived classes in order to only download the datasets.
         This method is called during `prepare_data` hook.
         """
-        pass
 
     def preprocess(self, dataset: Dataset, subset: str):
         """
@@ -178,7 +179,7 @@ class BaseSeq2SeqDataModule(LightningDataModule, ABC):
 
     def prepare_features_for_model(self, split: str):
         """
-        Format the `self.features` attribute by selecting the appropriate columns to be used 
+        Format the `self.features` attribute by selecting the appropriate columns to be used
         while forming batches (based on `self.model_attributes` property).
         """
         self.features[split].set_format(columns=self.model_features)
@@ -246,4 +247,3 @@ class BaseSeq2SeqDataModule(LightningDataModule, ABC):
         model_inputs["target_ids"] = labels["input_ids"]
 
         return model_inputs
-

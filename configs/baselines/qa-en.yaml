@@ -1,6 +1,6 @@
 seed_everything: 42
 data:
-  class_path: data_nli.XnliDataModule
+  class_path: data_qa.TydiQAGoldPModule
   init_args:
     tokenizer_name: "google/byt5-small"
     batch_size: 8
@@ -13,7 +13,7 @@ model:
   init_args:
     pretrained_model_name: "google/byt5-small"
     use_pretrained_weights: true
-    max_target_length: 5
+    max_target_length: 1024
 optimizer:
   class_path: transformers.optimization.Adafactor
   init_args:

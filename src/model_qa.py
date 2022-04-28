@@ -28,7 +28,7 @@ class QuestionAnsweringModel(BaseSeq2SeqModel):
         examples_ids = batch["id"]
 
         return [
-            {"id": i, "predicted_text": t}
+            {"id": i, "prediction_text": t}
             for i, t in zip(examples_ids, predicted_texts)
         ]
 

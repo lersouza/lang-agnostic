@@ -114,13 +114,6 @@ class XnliDataModule(TextClassificationDataModule):
         "zh",
     ]
 
-    def __init__(self, *args, train_language: str = "en", **kwargs):
-        super().__init__(*args, **kwargs)
-
-        self.train_language = train_language
-
-        self.save_hyperparameters()
-
     @property
     def val_dataloader_names(self):
         return self.XNLI_LANGUAGES
@@ -133,8 +126,10 @@ class XnliDataModule(TextClassificationDataModule):
         xnli_dataset = self.load_dataset("xnli", "all_languages")
         xnli_dataset = xnli_dataset.map(self.flatten, batched=True)
 
+        lang_to_train = self.train_language or "en"
+
         xnli_dataset["train"] = xnli_dataset["train"].filter(
-            self.filter_data_by_lang, fn_kwargs={"language": self.train_language}
+            self.filter_data_by_lang, fn_kwargs={"language": lang_to_train}
         )
         xnli_dataset["validation"] = self._build_lang_valid_set(
             xnli_dataset["validation"]

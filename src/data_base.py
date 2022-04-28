@@ -33,6 +33,7 @@ class BaseSeq2SeqDataModule(LightningDataModule, ABC):
         dataloader_num_workers: int = None,
         cache_dir: str = None,
         keep_in_memory: bool = False,
+        train_language: str = None,
     ):
         """
         Params:
@@ -58,6 +59,10 @@ class BaseSeq2SeqDataModule(LightningDataModule, ABC):
             keep_in_memory (`bool`, default: `False`):
                 Whether or not to keep the whole dataset in memory.
                 Note: If keep_in_memory is set to `True`, Dataset cache will not be used.
+            train_language (`str`, default: `None`):
+                Specifies the language to be used for training. If a child module supports
+                training in different languages, it will use this attribute
+                to check which language to use.
         """
         super().__init__()
 
@@ -79,6 +84,8 @@ class BaseSeq2SeqDataModule(LightningDataModule, ABC):
 
         self.cache_dir = cache_dir
         self.keep_in_memory = keep_in_memory
+
+        self.train_language = train_language
 
         self.save_hyperparameters()
 

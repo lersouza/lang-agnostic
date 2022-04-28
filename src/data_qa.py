@@ -56,12 +56,27 @@ class TydiQAGoldPModule(BaseSeq2SeqDataModule):
         """
         # pylint: disable=not-callable
 
-        collated = self.original_collator(features)
+        input_feat, target_feat = [], [], []
+        additional = {"id": [], "answers": []}
 
-        for torch_attr in ("input_ids", "attention_mask", "target_ids"):
-            collated[torch_attr] = torch.tensor(collated[torch_attr])
+        for feature in features:
+            input_feat.append(
+                {
+                    "input_ids": feature["input_ids"],
+                    "attention_mask": feature["attention_mask"],
+                }
+            )
+            target_feat.append({"input_ids": feature["target_ids"]})
 
-        return collated
+            additional["id"].append(feature["id"])
+            additional["answers"].append(feature["answers"])
+
+        input_collated = self.original_collator(input_feat)
+        input_collated["target_ids"] = self.original_collator(target_feat)["input_ids"]
+
+        input_collated.update(additional)
+
+        return input_collated
 
     def prepare_datasets(self) -> DatasetDict:
         """

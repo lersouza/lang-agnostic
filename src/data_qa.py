@@ -1,10 +1,56 @@
 """ Data Modules for Question-Answering Tasks """
-from typing import Any, Dict, List
+import logging
+
+from typing import Any, Dict, List, Union
 
 import torch
 
 from datasets import Dataset, DatasetDict
+from transformers import BatchEncoding
+
 from data_base import BaseSeq2SeqDataModule
+
+
+logger = logging.getLogger("data_qa")
+
+
+def _move(item: Any, device: torch.device) -> Any:
+    """
+    Helper function that moves a specific `item` to the desired `device`
+    iif the item supports it (i.e., has `to` operation).
+    """
+    # pylint: disable=no-member
+
+    if hasattr(item, "to"):
+        return item.to(device=device)
+
+    return item
+
+
+def _wrap_move_to_device(encoding: BatchEncoding):
+    """
+    Helper function that wraps the `BatchEncoding.to` to support items in the encoding
+    that will not be moved to GPU.
+    """
+    # pylint: disable=no-member
+
+    def _to(device: Union[str, torch.device]) -> BatchEncoding:
+        if (
+            isinstance(device, str)
+            or isinstance(device, torch.device)
+            or isinstance(device, int)
+        ):
+            encoding.data = {k: _move(v, device) for k, v in encoding.data.items()}
+        else:
+            logger.warning(
+                "Attempting to cast a BatchEncoding to type %s. This is not supported.",
+                device,
+            )
+        return encoding
+
+    encoding.to = _to
+
+    return encoding
 
 
 class TydiQAGoldPModule(BaseSeq2SeqDataModule):
@@ -29,8 +75,6 @@ class TydiQAGoldPModule(BaseSeq2SeqDataModule):
 
         # We setup return tensors as None to enable the input to have the reference answers
         self.original_collator = self.collate_fn
-        self.original_collator.return_tensors = None
-
         self.collate_fn = self.collate_wrapper
 
     @property
@@ -73,10 +117,9 @@ class TydiQAGoldPModule(BaseSeq2SeqDataModule):
 
         input_collated = self.original_collator(input_feat)
         input_collated["target_ids"] = self.original_collator(target_feat)["input_ids"]
-
         input_collated.update(additional)
 
-        return input_collated
+        return _wrap_move_to_device(input_collated)
 
     def prepare_datasets(self) -> DatasetDict:
         """

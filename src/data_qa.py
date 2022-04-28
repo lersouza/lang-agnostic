@@ -100,7 +100,7 @@ class TydiQAGoldPModule(BaseSeq2SeqDataModule):
         """
         # pylint: disable=not-callable
 
-        input_feat, target_feat = [], [], []
+        input_feat, target_feat = [], []
         additional = {"id": [], "answers": []}
 
         for feature in features:

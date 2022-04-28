@@ -11,48 +11,6 @@ from transformers import BatchEncoding
 from data_base import BaseSeq2SeqDataModule
 
 
-logger = logging.getLogger("data_qa")
-
-
-def _move(item: Any, device: torch.device) -> Any:
-    """
-    Helper function that moves a specific `item` to the desired `device`
-    iif the item supports it (i.e., has `to` operation).
-    """
-    # pylint: disable=no-member
-
-    if hasattr(item, "to"):
-        return item.to(device=device)
-
-    return item
-
-
-def _wrap_move_to_device(encoding: BatchEncoding):
-    """
-    Helper function that wraps the `BatchEncoding.to` to support items in the encoding
-    that will not be moved to GPU.
-    """
-    # pylint: disable=no-member
-
-    def _to(device: Union[str, torch.device]) -> BatchEncoding:
-        if (
-            isinstance(device, str)
-            or isinstance(device, torch.device)
-            or isinstance(device, int)
-        ):
-            encoding.data = {k: _move(v, device) for k, v in encoding.data.items()}
-        else:
-            logger.warning(
-                "Attempting to cast a BatchEncoding to type %s. This is not supported.",
-                device,
-            )
-        return encoding
-
-    encoding.to = _to
-
-    return encoding
-
-
 class TydiQAGoldPModule(BaseSeq2SeqDataModule):
     """
     Represents a data module for the GoldP task of the TydiQA dataset.
@@ -119,7 +77,15 @@ class TydiQAGoldPModule(BaseSeq2SeqDataModule):
         input_collated["target_ids"] = self.original_collator(target_feat)["input_ids"]
         input_collated.update(additional)
 
-        return _wrap_move_to_device(input_collated)
+        return input_collated
+
+    def transfer_batch_to_device(
+        self, batch: Any, device: torch.device, dataloader_idx: int
+    ) -> Any:
+        # pylint: disable=no-member
+
+        for k in ("input_ids", "attention_mask", "target_ids"):
+            batch[k] = batch[k].to(device)
 
     def prepare_datasets(self) -> DatasetDict:
         """

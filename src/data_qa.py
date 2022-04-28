@@ -87,6 +87,8 @@ class TydiQAGoldPModule(BaseSeq2SeqDataModule):
         for k in ("input_ids", "attention_mask", "target_ids"):
             batch[k] = batch[k].to(device)
 
+        return batch
+
     def prepare_datasets(self) -> DatasetDict:
         """
         Prepare the TydiQA GoldP data.

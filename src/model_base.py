@@ -2,6 +2,7 @@
 
 from abc import abstractmethod
 from collections import defaultdict
+import time
 from typing import Any, Dict, List, Tuple, Union
 
 import numpy as np
@@ -526,11 +527,14 @@ class BaseSeq2SeqModelV2(LightningModule):
                 The names of the known dataloaders.
         """
         # pylint: disable=unused-argument
+        batch_size, input_seq_len = batch["input_ids"].shape[:2]
 
+        start_time = time.time()
         output = self(**batch)
-        input_seq_len = batch["input_ids"].shape[1]
+        gen_time = (time.time() - start_time) / batch_size
 
         self.log(f"{prefix}/seq_len", float(input_seq_len))
+        self.log(f"{prefix}/gen_time", gen_time)
 
         return {"predictions": output}
 
@@ -660,7 +664,7 @@ class BaseSeq2SeqModelV2(LightningModule):
             )
 
     @abstractmethod
-    def post_process(self, examples: Dataset, features: Dataset, model_outputs: Dict[List[Any]]) -> Dict[str, Any]:
+    def post_process(self, examples: Dataset, features: Dataset, model_outputs: Dict[str, List[Any]]) -> Dict[str, Any]:
         """
         Post process the results from the model and returns a dictionary with the following keys:
 
@@ -696,7 +700,7 @@ class BaseSeq2SeqModelV2(LightningModule):
             return {}
 
         keys = outputs[0].keys()
-        aggregated = {k: sum([o[k] for o in outputs], []) for k in keys}
+        aggregated = {k: sum([o[k].tolist() for o in outputs], []) for k in keys}
 
         return aggregated
 
@@ -720,8 +724,8 @@ class BaseSeq2SeqModelV2(LightningModule):
             assert len(dataloader_names) == len(outputs)
 
             return {
-                k: BaseSeq2SeqModel.aggregate_single_output(outputs[i])
+                k: BaseSeq2SeqModelV2.aggregate_single_output(outputs[i])
                 for i, k in enumerate(dataloader_names)
             }
 
-        return {dataloader_names[0]: BaseSeq2SeqModel.aggregate_single_output(outputs)}
+        return {dataloader_names[0]: BaseSeq2SeqModelV2.aggregate_single_output(outputs)}

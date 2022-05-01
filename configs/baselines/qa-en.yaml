@@ -5,15 +5,14 @@ data:
     tokenizer_name: "google/byt5-small"
     batch_size: 8
     max_length: 2048
-    max_target_length: 1024
-    train_language: en
+    max_target_length: 768
     dataloader_num_workers: 6
 model:
   class_path: model_qa.QuestionAnsweringModel
   init_args:
     pretrained_model_name: "google/byt5-small"
     use_pretrained_weights: true
-    max_target_length: 1024
+    max_target_length: 768
     metric_name: squad
 optimizer:
   class_path: transformers.optimization.Adafactor
@@ -26,7 +25,7 @@ trainer:
   max_epochs: 10
   accumulate_grad_batches: 4
   precision: 32
-  val_check_interval: 0.2
+  val_check_interval: 1.0
   logger:
     class_path: pytorch_lightning.loggers.WandbLogger
     init_args:
@@ -34,13 +33,13 @@ trainer:
   callbacks:
     - class_path: pytorch_lightning.callbacks.model_checkpoint.ModelCheckpoint
       init_args:
-        filename: "baseline-qa-en-epoch={epoch}-step={step}-acc={val/accuracy/en:.4f}"
-        monitor: "val/accuracy/en"
+        filename: "baseline-qa-epoch={epoch}-step={step}-acc={val/avg_f1:.4f}"
+        monitor: "val/avg_f1"
         mode: "max"
         save_last: true
         auto_insert_metric_name: false
     - class_path: pytorch_lightning.callbacks.early_stopping.EarlyStopping
       init_args:
-        monitor: "val/accuracy/en"
+        monitor: "val/avg_f1"
         mode: "max"
-        patience: 5
+        patience: 3

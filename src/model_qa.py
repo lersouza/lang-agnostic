@@ -13,9 +13,8 @@ class QuestionAnsweringModel(BaseSeq2SeqModelV2):
     """
 
     def post_process(
-        self, examples: Dataset, features: Dataset, model_outputs: Dict[List[Any]]
+        self, examples: Dataset, features: Dataset, model_outputs: Dict[str, List[Any]]
     ) -> Dict[str, Any]:
-        assert len(examples) == len(features) == len(model_outputs["predictions"])
 
         predictions, references = [], []
         decoded_predictions = self.tokenizer.batch_decode(
@@ -26,7 +25,7 @@ class QuestionAnsweringModel(BaseSeq2SeqModelV2):
             predictions.append({"id": example["id"], "prediction_text": prediction})
             references.append({"id": example["id"], "answers": example["answers"]})
 
-        return {"predictions": model_outputs, "references": references}
+        return {"predictions": predictions, "references": references}
 
     def format_outputs_for_logging(self, predictions, references) -> Tuple:
         """

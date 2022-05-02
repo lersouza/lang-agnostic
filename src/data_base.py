@@ -466,10 +466,13 @@ class BaseSeq2SeqDataModuleV2(LightningDataModule, ABC):
         """
         feature_set = self.features[split_name]
 
-        return [
-            self._create_dataloader(feature_set[s], shuffle)
-            for s in dataloader_names
-        ]
+        if isinstance(feature_set, DatasetDict):
+            return [
+                self._create_dataloader(feature_set[s], shuffle)
+                for s in dataloader_names
+            ]
+
+        return self._create_dataloader(feature_set, shuffle)
 
     @staticmethod
     def tokenize_sequences(

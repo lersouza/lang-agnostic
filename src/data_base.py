@@ -21,8 +21,8 @@ class BaseSeq2SeqDataModule(LightningDataModule, ABC):
     """
     Represents a base class for Seq-to-Seq datasets.
     """
-    ALL_SPLITS = ["train", "validation", "test"]
 
+    ALL_SPLITS = ["train", "validation", "test"]
 
     def __init__(
         self,
@@ -100,12 +100,12 @@ class BaseSeq2SeqDataModule(LightningDataModule, ABC):
 
     @property
     def val_dataloader_names(self):
-        """ A list containing the names of the dataloaders returned by `val_dataloader` method. """
+        """A list containing the names of the dataloaders returned by `val_dataloader` method."""
         return ["default"]
 
     @property
     def test_dataloader_names(self):
-        """ A list containing the names of the dataloaders returned by `test_dataloader` method. """
+        """A list containing the names of the dataloaders returned by `test_dataloader` method."""
         return ["default"]
 
     def train_dataloader(self) -> DataLoader:
@@ -133,7 +133,10 @@ class BaseSeq2SeqDataModule(LightningDataModule, ABC):
         raise NotImplementedError()
 
     def load_dataset(
-        self, name: str, subset: str = None, split: Union[str, List[str]] = None,
+        self,
+        name: str,
+        subset: str = None,
+        split: Union[str, List[str]] = None,
     ) -> DatasetDict:
         """
         Utility function to load a dataset from Huggingface's datasets library.
@@ -262,8 +265,8 @@ class BaseSeq2SeqDataModuleV2(LightningDataModule, ABC):
     """
     Represents a base class for Seq-to-Seq datasets.
     """
-    ALL_SPLITS = ["train", "validation", "test"]
 
+    ALL_SPLITS = ["train", "validation", "test"]
 
     def __init__(
         self,
@@ -277,7 +280,7 @@ class BaseSeq2SeqDataModuleV2(LightningDataModule, ABC):
         cache_dir: str = None,
         keep_in_memory: bool = False,
         train_language: str = None,
-        validate_on: List[str] = None
+        validate_on: List[str] = None,
     ):
         """
         Params:
@@ -345,25 +348,43 @@ class BaseSeq2SeqDataModuleV2(LightningDataModule, ABC):
         return ["input_ids", "attention_mask", "labels"]
 
     @property
-    def val_dataloader_names(self):
-        """ A list containing the names of the dataloaders returned by `val_dataloader` method. """
-        return ["default"]
+    def dataloader_names(self) -> Dict[str, List[str]]:
+        """
+        Return the names of the dataloaders used for validation and test.
+        The result is a Dictionary with the following keys:
+
+            validation: a list of names for validation data loaders
+            test:  a list of names for validation data loaders
+
+        The difference from `dataloader_names` to `supported_dataloader_names` is that the former
+        returns a list of the dataloaders that will actually be used by `val_dataloader` or
+        `test_dataloader` methods, while the latter return all supported dataloader names by
+        the module.
+        """
+        dataloader_names = self.supported_dataloader_names
+        dataloader_names.update(self.eval_subsets)
+
+        return dataloader_names
 
     @property
-    def test_dataloader_names(self):
-        """ A list containing the names of the dataloaders returned by `test_dataloader` method. """
-        return ["default"]
+    def supported_dataloader_names(self) -> Dict[str, List[str]]:
+        """
+        Return the names of all available dataloaders for validation and test.
+        The result is a Dictionary with the following keys:
+
+            validation: a list of names for validation data loaders
+            test:  a list of names for validation data loaders
+        """
+        return {"validation": ["default"], "test": ["default"]}
 
     def train_dataloader(self) -> DataLoader:
         return self._create_dataloader(self.features["train"], shuffle=True)
 
     def val_dataloader(self) -> DataLoader:
-        return self._create_multiple_dataloaders(
-            "validation", self.val_dataloader_names
-        )
+        return self._create_multiple_dataloaders("validation")
 
     def test_dataloader(self) -> DataLoader:
-        return self._create_multiple_dataloaders("test", self.test_dataloader_names)
+        return self._create_multiple_dataloaders("test")
 
     def predict_dataloader(self) -> DataLoader:
         raise NotImplementedError()
@@ -379,7 +400,11 @@ class BaseSeq2SeqDataModuleV2(LightningDataModule, ABC):
         raise NotImplementedError()
 
     def load_dataset(
-        self, name: str, subset: str = None, split: Union[str, List[str]] = None, **kwargs,
+        self,
+        name: str,
+        subset: str = None,
+        split: Union[str, List[str]] = None,
+        **kwargs,
     ) -> DatasetDict:
         """
         Utility function to load a dataset from Huggingface's datasets library.
@@ -463,19 +488,18 @@ class BaseSeq2SeqDataModuleV2(LightningDataModule, ABC):
         )
 
     def _create_multiple_dataloaders(
-        self, split_name: str, dataloader_names: List[str], shuffle: bool = False
+        self, split_name: str, shuffle: bool = False
     ) -> Union[DataLoader, List[DataLoader]]:
         """
         Creates one or many dataloaders,
         depending on the content of features associated with `split_name`.
         """
         feature_set = self.features[split_name]
-        eval_subset = self.eval_subsets.get(split_name, dataloader_names)
+        eval_subset = self.dataloader_names[split_name]
 
         if isinstance(feature_set, DatasetDict):
             return [
-                self._create_dataloader(feature_set[s], shuffle)
-                for s in eval_subset
+                self._create_dataloader(feature_set[s], shuffle) for s in eval_subset
             ]
 
         return self._create_dataloader(feature_set, shuffle)

@@ -1,7 +1,7 @@
 """ Data Modules for Question-Answering Tasks """
 import abc
 
-from typing import Dict
+from typing import Dict, List
 
 from datasets import Dataset, DatasetDict
 from data_base import BaseSeq2SeqDataModuleV2
@@ -96,12 +96,10 @@ class TydiQAGoldPModule(QuestionAnsweringDataModule):
     }
 
     @property
-    def val_dataloader_names(self):
-        return list(self.TYDIQA_LANGUAGES.values())
+    def supported_dataloader_names(self) -> Dict[str, List[str]]:
+        supported_languages = list(self.TYDIQA_LANGUAGES.values())
 
-    @property
-    def test_dataloader_names(self):
-        return list(self.TYDIQA_LANGUAGES.values())
+        return {"validation": supported_languages, "test": supported_languages}
 
     def prepare_datasets(self) -> DatasetDict:
         """

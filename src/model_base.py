@@ -58,7 +58,7 @@ class BaseSeq2SeqModel(LightningModule):
         Returns the names of the validation Data Loaders.
         """
         if self.trainer and self.trainer.datamodule:
-            return self.trainer.datamodule.val_dataloader_names
+            return self.trainer.datamodule.dataloader_names["validation"]
 
         return ["default"]
 
@@ -68,7 +68,7 @@ class BaseSeq2SeqModel(LightningModule):
         Returns the names of the test Data Loaders.
         """
         if self.trainer and self.trainer.datamodule:
-            return self.trainer.datamodule.test_dataloader_names
+            return self.trainer.datamodule.dataloader_names["test"]
 
         return ["default"]
 

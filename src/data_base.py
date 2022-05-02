@@ -277,6 +277,7 @@ class BaseSeq2SeqDataModuleV2(LightningDataModule, ABC):
         cache_dir: str = None,
         keep_in_memory: bool = False,
         train_language: str = None,
+        validate_on: List[str] = None
     ):
         """
         Params:
@@ -329,6 +330,10 @@ class BaseSeq2SeqDataModuleV2(LightningDataModule, ABC):
         self.keep_in_memory = keep_in_memory
 
         self.train_language = train_language
+        self.eval_subsets = {}
+
+        if validate_on:
+            self.eval_subsets["validation"] = validate_on
 
         self.save_hyperparameters()
 
@@ -465,11 +470,12 @@ class BaseSeq2SeqDataModuleV2(LightningDataModule, ABC):
         depending on the content of features associated with `split_name`.
         """
         feature_set = self.features[split_name]
+        eval_subset = self.eval_subsets.get(split_name, dataloader_names)
 
         if isinstance(feature_set, DatasetDict):
             return [
                 self._create_dataloader(feature_set[s], shuffle)
-                for s in dataloader_names
+                for s in eval_subset
             ]
 
         return self._create_dataloader(feature_set, shuffle)

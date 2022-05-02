@@ -13,6 +13,7 @@ model:
     pretrained_model_name: "hugo/byt5-mono-en-v1"
     pretrained_model_revision: "939ad92a33a0f1fbb951d7a93b339be5bc3500b2"
     use_pretrained_weights: true
+    from_flax: true
     max_target_length: 768
     metric_name: squad
 optimizer:

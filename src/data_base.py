@@ -2,8 +2,9 @@
 
 import os
 
-from typing import Any, Dict, List, Union
 from abc import ABC, abstractmethod
+from pathlib import Path
+from typing import Any, Dict, List, Union
 
 from datasets import Dataset, DatasetDict, load_dataset
 from pytorch_lightning import LightningDataModule
@@ -324,7 +325,7 @@ class BaseSeq2SeqDataModuleV2(LightningDataModule, ABC):
             self.tokenizer, padding=padding, max_length=max_length, return_tensors="pt"
         )
 
-        self.cache_dir = cache_dir
+        self.cache_dir = cache_dir or Path.home() / ".cache"
         self.keep_in_memory = keep_in_memory
 
         self.train_language = train_language
@@ -373,7 +374,7 @@ class BaseSeq2SeqDataModuleV2(LightningDataModule, ABC):
         raise NotImplementedError()
 
     def load_dataset(
-        self, name: str, subset: str = None, split: Union[str, List[str]] = None,
+        self, name: str, subset: str = None, split: Union[str, List[str]] = None, **kwargs,
     ) -> DatasetDict:
         """
         Utility function to load a dataset from Huggingface's datasets library.
@@ -394,6 +395,9 @@ class BaseSeq2SeqDataModuleV2(LightningDataModule, ABC):
                 For instance, `validation` split may be translated into `validation_matched`
                 if `self.splits["validation"]` is set to `"validation_matched"`.
 
+            kwargs (Dict[str, Any]):
+                Any other additional args to be passed to `datasets.load_dataset` method.
+
         """
         split = split or BaseSeq2SeqDataModule.ALL_SPLITS
 
@@ -406,6 +410,7 @@ class BaseSeq2SeqDataModuleV2(LightningDataModule, ABC):
             split=actual_splits,
             cache_dir=self.cache_dir,
             keep_in_memory=self.keep_in_memory,
+            **kwargs,
         )
 
         return DatasetDict({s: datasets[i] for i, s in enumerate(split)})

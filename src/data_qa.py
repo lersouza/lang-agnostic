@@ -1,11 +1,84 @@
 """ Data Modules for Question-Answering Tasks """
-from typing import Dict
-from datasets import Dataset, DatasetDict
+import abc
 
+from typing import Dict
+
+from datasets import Dataset, DatasetDict
 from data_base import BaseSeq2SeqDataModuleV2
 
 
-class TydiQAGoldPModule(BaseSeq2SeqDataModuleV2):
+class QuestionAnsweringDataModule(BaseSeq2SeqDataModuleV2, abc.ABC):
+    """
+    Base class for Question-Answering Datasets
+    """
+
+    def preprocess(self, dataset: Dataset, subset: str):
+        features = dataset.map(
+            self.prepare_qa_input_sentence,
+            desc="Formatting input sequence",
+        )
+
+        features = features.map(
+            self.tokenize_sequences,
+            batched=True,
+            desc="Tokenizing",
+            remove_columns=["input", "target"],
+            fn_kwargs={
+                "tokenizer": self.tokenizer,
+                "max_length": self.max_length,
+                "max_target_length": self.max_target_length,
+            },
+        )
+
+        return features
+
+    @staticmethod
+    def prepare_qa_input_sentence(example: Dict):
+        """
+        Formats the input for the model as: `question: <<question>> context: <<context>>
+        The target (for training) is the first available answer
+        """
+        ans = example["answers"]["text"]
+        qas = example["question"]
+        ctx = example["context"]
+
+        example["input"] = f"question: {qas} context: {ctx}"
+        example["target"] = ans[0]
+
+        return example
+
+
+class SquadDataModule(QuestionAnsweringDataModule):
+    """
+    A datamodule for using SQuAD dataset.
+    """
+
+    def prepare_datasets(self) -> DatasetDict:
+        """
+        Prepare the TydiQA GoldP data.
+        This method uses the same set for both validation and test.
+        """
+        squad = self.load_dataset("squad", split=["train", "validation"])
+
+        return DatasetDict(
+            {
+                "train": squad["train"],
+                "validation": squad["validation"],
+                "test": squad["validation"],
+            }
+        )
+
+
+class SberquadDataModule(QuestionAnsweringDataModule):
+    """
+    A data module for working with SberQuAD dataset;
+    """
+
+    def prepare_datasets(self) -> DatasetDict:
+        return self.load_dataset("sberquad")
+
+
+class TydiQAGoldPModule(QuestionAnsweringDataModule):
     """
     Represents a data module for the GoldP task of the TydiQA dataset.
     """
@@ -56,26 +129,6 @@ class TydiQAGoldPModule(BaseSeq2SeqDataModuleV2):
 
         return DatasetDict({"train": tydi["train"], "validation": valid, "test": valid})
 
-    def preprocess(self, dataset: Dataset, subset: str):
-        features = dataset.map(
-            self.prepare_input_sentence,
-            desc="Formatting input sequence",
-        )
-
-        features = features.map(
-            self.tokenize_sequences,
-            batched=True,
-            desc="Tokenizing",
-            remove_columns=["input", "target"],
-            fn_kwargs={
-                "tokenizer": self.tokenizer,
-                "max_length": self.max_length,
-                "max_target_length": self.max_target_length,
-            },
-        )
-
-        return features
-
     @staticmethod
     def extract_language(example: Dict):
         """
@@ -83,20 +136,5 @@ class TydiQAGoldPModule(BaseSeq2SeqDataModuleV2):
         """
         raw_lang = example["id"].split("-")[0]
         example["language"] = TydiQAGoldPModule.TYDIQA_LANGUAGES[raw_lang]
-
-        return example
-
-    @staticmethod
-    def prepare_input_sentence(example: Dict):
-        """
-        Formats the input for the model as: `question: <<question>> context: <<context>>
-        The target (for training) is the first available answer
-        """
-        ans = example["answers"]["text"]
-        qas = example["question"]
-        ctx = example["context"]
-
-        example["input"] = f"question: {qas} context: {ctx}"
-        example["target"] = ans[0]
 
         return example

@@ -1,12 +1,15 @@
 seed_everything: 42
 data:
-  class_path: data_qa.SquadDataModule
+  class_path: data_qa.TydiQAGoldPModule
   init_args:
     tokenizer_name: "hugo/byt5-mono-ru-v1"
     batch_size: 8
     max_length: 2048
     max_target_length: 768
     dataloader_num_workers: 6
+    train_language: ru
+    validate_on:
+      - ru
 model:
   class_path: model_qa.QuestionAnsweringModel
   init_args:
@@ -35,13 +38,13 @@ trainer:
   callbacks:
     - class_path: pytorch_lightning.callbacks.model_checkpoint.ModelCheckpoint
       init_args:
-        filename: "baseline-qa-en-en-epoch={epoch}-step={step}-acc={val/default/f1:.4f}"
-        monitor: "val/default/f1"
+        filename: "baseline-qa-ru-ru-epoch={epoch}-step={step}-acc={val/f1/ru:.4f}"
+        monitor: "val/f1/ru"
         mode: "max"
         save_last: true
         auto_insert_metric_name: false
     - class_path: pytorch_lightning.callbacks.early_stopping.EarlyStopping
       init_args:
-        monitor: "val/default/f1"
+        monitor: "val/f1/ru"
         mode: "max"
         patience: 3

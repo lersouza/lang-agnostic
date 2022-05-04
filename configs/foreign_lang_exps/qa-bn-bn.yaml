@@ -6,8 +6,8 @@ data:
     batch_size: 6
     max_length: 2048
     max_target_length: 768
-    train_language: bn
     dataloader_num_workers: 6
+    train_language: bn
     validate_on:
       - bn
 model:
@@ -38,13 +38,13 @@ trainer:
   callbacks:
     - class_path: pytorch_lightning.callbacks.model_checkpoint.ModelCheckpoint
       init_args:
-        filename: "baseline-qa-bn-bn-epoch={epoch}-step={step}-acc={val/bn/f1:.4f}"
-        monitor: "val/bn/f1"
+        filename: "baseline-qa-bn-bn-epoch={epoch}-step={step}-acc={val/f1/bn:.4f}"
+        monitor: "val/f1/bn"
         mode: "max"
         save_last: true
         auto_insert_metric_name: false
     - class_path: pytorch_lightning.callbacks.early_stopping.EarlyStopping
       init_args:
-        monitor: "val/bn/f1"
+        monitor: "val/f1/bn"
         mode: "max"
         patience: 3

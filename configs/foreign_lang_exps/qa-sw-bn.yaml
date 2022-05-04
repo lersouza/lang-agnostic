@@ -2,19 +2,19 @@ seed_everything: 42
 data:
   class_path: data_qa.TydiQAGoldPModule
   init_args:
-    tokenizer_name: "hugo/byt5-mono-ar-v1"
+    tokenizer_name: "hugo/byt5-mono-sw-v1"
     batch_size: 6
     max_length: 2048
     max_target_length: 768
     dataloader_num_workers: 6
-    train_language: ar
+    train_language: bn
     validate_on:
-      - ar
+      - bn
 model:
   class_path: model_qa.QuestionAnsweringModel
   init_args:
-    pretrained_model_name: "hugo/byt5-mono-ar-v1"
-    pretrained_model_revision: "73b0b3095f36e3369842bfa33659e326a7aa661e"
+    pretrained_model_name: "hugo/byt5-mono-sw-v1"
+    pretrained_model_revision: "b3c60b74c853d988ac1c425bc174456307f8f1bc"
     use_pretrained_weights: true
     from_flax: true
     max_target_length: 768
@@ -38,13 +38,13 @@ trainer:
   callbacks:
     - class_path: pytorch_lightning.callbacks.model_checkpoint.ModelCheckpoint
       init_args:
-        filename: "baseline-qa-ar-ar-epoch={epoch}-step={step}-acc={val/f1/ar:.4f}"
-        monitor: "val/f1/ar"
+        filename: "baseline-qa-sw-bn-epoch={epoch}-step={step}-acc={val/f1/bn:.4f}"
+        monitor: "val/f1/bn"
         mode: "max"
         save_last: true
         auto_insert_metric_name: false
     - class_path: pytorch_lightning.callbacks.early_stopping.EarlyStopping
       init_args:
-        monitor: "val/f1/ar"
+        monitor: "val/f1/bn"
         mode: "max"
         patience: 3

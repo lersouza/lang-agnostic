@@ -3,7 +3,7 @@ data:
   class_path: data_qa.TydiQAGoldPModule
   init_args:
     tokenizer_name: "hugo/byt5-mono-en-v1"
-    batch_size: 8
+    batch_size: 6
     max_length: 2048
     max_target_length: 768
     dataloader_num_workers: 6

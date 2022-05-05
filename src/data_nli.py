@@ -89,7 +89,7 @@ class Assin2DataModule(TextClassificationDataModule):
 
     def prepare_datasets(self):
         dataset = self.load_dataset("assin2")
-        dataset.rename_column_("entailment_judgment", "label")
+        dataset.rename_column("entailment_judgment", "label")
 
         return dataset
 

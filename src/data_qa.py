@@ -1,6 +1,7 @@
 """ Data Modules for Question-Answering Tasks """
 import abc
 
+from pathlib import Path
 from typing import Dict, List
 
 from datasets import Dataset, DatasetDict
@@ -55,7 +56,7 @@ class SquadDataModule(QuestionAnsweringDataModule):
 
     def prepare_datasets(self) -> DatasetDict:
         """
-        Prepare the TydiQA GoldP data.
+        Prepare the SQuAD data.
         This method uses the same set for both validation and test.
         """
         squad = self.load_dataset("squad", split=["train", "validation"])
@@ -68,6 +69,27 @@ class SquadDataModule(QuestionAnsweringDataModule):
             }
         )
 
+
+class FaquadDataModule(QuestionAnsweringDataModule):
+    """
+    A datamodule for using FaQuAD dataset.
+    """
+
+    def prepare_datasets(self) -> DatasetDict:
+        """
+        Prepare the FaQuAD data.
+        This method uses the same set for both validation and test.
+        """
+        datap = str(Path(__file__).parents[1].absolute() / "datasets/faquad.py")
+        squad = self.load_dataset(datap, split=["train", "validation"])
+
+        return DatasetDict(
+            {
+                "train": squad["train"],
+                "validation": squad["validation"],
+                "test": squad["validation"],
+            }
+        )
 
 class SberquadDataModule(QuestionAnsweringDataModule):
     """

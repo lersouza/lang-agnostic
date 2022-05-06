@@ -21,17 +21,17 @@ class TextClassificationDataModule(BaseSeq2SeqDataModule, abc.ABC):
 
     @property
     def premise_attr(self):
-        """ The name of the premise column in the dataset. """
+        """The name of the premise column in the dataset."""
         return "premise"
 
     @property
     def hypothesis_attr(self):
-        """ The name of the hypothesis column in the dataset. """
+        """The name of the hypothesis column in the dataset."""
         return "hypothesis"
 
     @property
     def label_attr(self):
-        """ The name of the label column in the dataset. """
+        """The name of the label column in the dataset."""
         return "label"
 
     @property
@@ -87,19 +87,18 @@ class TextClassificationDataModule(BaseSeq2SeqDataModule, abc.ABC):
 
 
 class Assin2DataModule(TextClassificationDataModule):
-    """ A data module for the ASSIN2 Portuguese Dataset."""
+    """A data module for the ASSIN2 Portuguese Dataset."""
 
     def prepare_datasets(self):
         datap = str(Path(__file__).parents[1].absolute() / "datasets/assin2.py")
-
-        dataset = self.load_dataset(datap)
-        dataset.rename_column("entailment_judgment", "label")
+        dataset = self.load_dataset(datap).rename_column("entailment_judgment", "label")
 
         return dataset
 
 
 class XnliDataModule(TextClassificationDataModule):
-    """ A data module for the XNLI dataset. """
+    """A data module for the XNLI dataset."""
+
     XNLI_LANGUAGES = [
         "ar",
         "bg",

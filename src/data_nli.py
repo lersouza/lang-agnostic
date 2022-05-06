@@ -3,7 +3,9 @@
 import abc
 
 from collections import defaultdict
+from pathlib import Path
 from typing import Dict
+
 from datasets import Dataset, DatasetDict
 
 from data_base import BaseSeq2SeqDataModule
@@ -88,7 +90,9 @@ class Assin2DataModule(TextClassificationDataModule):
     """ A data module for the ASSIN2 Portuguese Dataset."""
 
     def prepare_datasets(self):
-        dataset = self.load_dataset("assin2")
+        datap = str(Path(__file__).parents[1].absolute() / "datasets/assin2.py")
+
+        dataset = self.load_dataset(datap)
         dataset.rename_column("entailment_judgment", "label")
 
         return dataset

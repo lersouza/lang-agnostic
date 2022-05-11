@@ -7,9 +7,9 @@ data:
     max_length: 2048
     max_target_length: 768
     dataloader_num_workers: 6
-    train_language: en
+    train_language: ar
     validate_on:
-      - en
+      - ar
 model:
   class_path: model_qa.QuestionAnsweringModel
   init_args:
@@ -36,13 +36,13 @@ trainer:
   callbacks:
     - class_path: pytorch_lightning.callbacks.model_checkpoint.ModelCheckpoint
       init_args:
-        filename: "baseline-qa-en-epoch={epoch}-step={step}-acc={val/f1/en:.4f}"
-        monitor: "val/f1/en"
+        filename: "baseline-qa-ar-epoch={epoch}-step={step}-acc={val/f1/ar:.4f}"
+        monitor: "val/f1/ar"
         mode: "max"
         save_last: true
         auto_insert_metric_name: false
     - class_path: pytorch_lightning.callbacks.early_stopping.EarlyStopping
       init_args:
-        monitor: "val/f1/en"
+        monitor: "val/f1/ar"
         mode: "max"
         patience: 3

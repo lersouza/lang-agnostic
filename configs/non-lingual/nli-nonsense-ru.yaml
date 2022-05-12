@@ -1,0 +1,45 @@
+seed_everything: 42
+data:
+  class_path: data_nli.XnliDataModule
+  init_args:
+    tokenizer_name: "hugo/byt5-mono-nonsense-v1"
+    batch_size: 16
+    max_length: 1024
+    max_target_length: 5
+    train_language: ru
+    dataloader_num_workers: 6
+model:
+  pretrained_model_name: "hugo/byt5-mono-nonsense-v1"
+  pretrained_model_revision: "5e4676baa37e04ae9d74132bd2b73b39027d193d"
+  from_flax: true
+  use_pretrained_weights: true
+  max_target_length: 5
+optimizer:
+  class_path: transformers.optimization.Adafactor
+  init_args:
+    lr: 0.0001
+    scale_parameter: false
+    relative_step: false
+trainer:
+  gpus: 1
+  max_epochs: 10
+  accumulate_grad_batches: 4
+  precision: 32
+  val_check_interval: 0.2
+  logger:
+    class_path: pytorch_lightning.loggers.WandbLogger
+    init_args:
+      project: nli
+  callbacks:
+    - class_path: pytorch_lightning.callbacks.model_checkpoint.ModelCheckpoint
+      init_args:
+        filename: "flang-nli-nonsense-ru-epoch={epoch}-step={step}-acc={val/accuracy/ru:.4f}"
+        monitor: "val/accuracy/ru"
+        mode: "max"
+        save_last: true
+        auto_insert_metric_name: false
+    - class_path: pytorch_lightning.callbacks.early_stopping.EarlyStopping
+      init_args:
+        monitor: "val/accuracy/ru"
+        mode: "max"
+        patience: 5

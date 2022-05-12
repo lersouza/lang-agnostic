@@ -14,15 +14,16 @@ class TextClassificationModel(BaseSeq2SeqModelV2):
     def post_process(
         self, examples: Dataset, features: Dataset, model_outputs: Dict[str, List[Any]]
     ) -> Dict[str, Any]:
-
+        predictions, references = [], []
         predicted_texts = self.tokenizer.batch_decode(
             model_outputs["predictions"], skip_special_tokens=True
         )
 
-        predicted_labels = [self._convert_label_to_integer(t) for t in predicted_texts]
-        target_labels = examples["label"]
+        for pred, ref in zip(predicted_texts, examples["label"]):
+            predictions.append(self._convert_label_to_integer(pred))
+            references.append(ref)
 
-        return {"predictions": predicted_labels, "references": target_labels}
+        return {"predictions": predictions, "references": references}
 
     def _convert_label_to_integer(self, text: str):
         return int(text.strip()) if re.match(r"^\d+$", text.strip()) else -1

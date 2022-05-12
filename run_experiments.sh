@@ -16,8 +16,8 @@ echo "Login to Wandb"
 wandb login
 echo ""
 
-for exp in $EXPERIMENTS; do
-    for seed in "${SEEDS[@]}"; do
+for seed in "${SEEDS[@]}"; do
+    for exp in $EXPERIMENTS; do 
         echo "====================================================="
         echo "Starting experiment $exp with seed $seed ..."
 

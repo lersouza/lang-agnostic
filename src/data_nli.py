@@ -4,14 +4,14 @@ import abc
 
 from collections import defaultdict
 from pathlib import Path
-from typing import Dict
+from typing import Dict, List
 
 from datasets import Dataset, DatasetDict
 
-from data_base import BaseSeq2SeqDataModule
+from data_base import BaseSeq2SeqDataModuleV2
 
 
-class TextClassificationDataModule(BaseSeq2SeqDataModule, abc.ABC):
+class TextClassificationDataModule(BaseSeq2SeqDataModuleV2, abc.ABC):
     """
     Represents a base class for Text-Classification datasets.
 
@@ -118,11 +118,7 @@ class XnliDataModule(TextClassificationDataModule):
     ]
 
     @property
-    def val_dataloader_names(self):
-        return self.XNLI_LANGUAGES
-
-    @property
-    def test_dataloader_names(self):
+    def supported_dataloader_names(self) -> Dict[str, List[str]]:
         return self.XNLI_LANGUAGES
 
     def prepare_datasets(self):

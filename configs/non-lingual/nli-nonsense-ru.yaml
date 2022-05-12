@@ -7,13 +7,17 @@ data:
     max_length: 1024
     max_target_length: 5
     train_language: ru
+    validate_on:
+      - ru
     dataloader_num_workers: 6
 model:
-  pretrained_model_name: "hugo/byt5-mono-nonsense-v1"
-  pretrained_model_revision: "5e4676baa37e04ae9d74132bd2b73b39027d193d"
-  from_flax: true
-  use_pretrained_weights: true
-  max_target_length: 5
+  class_path: model_nli.TextClassificationModel
+  init_args:
+    pretrained_model_name: "hugo/byt5-mono-nonsense-v1"
+    pretrained_model_revision: "5e4676baa37e04ae9d74132bd2b73b39027d193d"
+    from_flax: true
+    use_pretrained_weights: true
+    max_target_length: 5
 optimizer:
   class_path: transformers.optimization.Adafactor
   init_args:

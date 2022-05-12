@@ -115,7 +115,7 @@ class XnliDataModule(TextClassificationDataModule):
 
     @property
     def supported_dataloader_names(self) -> Dict[str, List[str]]:
-        return self.XNLI_LANGUAGES
+        return {"validation": self.XNLI_LANGUAGES, "test": self.XNLI_LANGUAGES}
 
     def prepare_datasets(self):
         xnli_dataset = self.load_dataset("xnli", "all_languages")

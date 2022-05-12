@@ -34,10 +34,6 @@ class TextClassificationDataModule(BaseSeq2SeqDataModuleV2, abc.ABC):
         """The name of the label column in the dataset."""
         return "label"
 
-    @property
-    def model_features(self):
-        return ["input_ids", "attention_mask", "target_ids", "label"]
-
     def preprocess(self, dataset: Dataset, subset: str):
         features = dataset.map(
             self.prepare_input_sentence,

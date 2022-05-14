@@ -17,7 +17,7 @@ model:
     pretrained_model_revision: 19f1f4683914f6e337718f249ceb62acb0e2bd1e
     use_pretrained_weights: true
     max_target_length: 5
-    metric: accuracy
+    metric_name: accuracy
 optimizer:
   class_path: transformers.optimization.Adafactor
   init_args:

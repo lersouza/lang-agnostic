@@ -16,7 +16,7 @@ model:
     pretrained_model_name: "google/byt5-small"
     use_pretrained_weights: true
     max_target_length: 5
-    metric: accuracy
+    metric_name: accuracy
 optimizer:
   class_path: transformers.optimization.Adafactor
   init_args:

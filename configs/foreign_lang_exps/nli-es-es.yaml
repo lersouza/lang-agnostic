@@ -15,6 +15,7 @@ model:
   init_args:
     pretrained_model_name: "hugo/byt5-mono-es-v1"
     pretrained_model_revision: 19f1f4683914f6e337718f249ceb62acb0e2bd1e
+    from_flax: true
     use_pretrained_weights: true
     max_target_length: 5
     metric_name: accuracy

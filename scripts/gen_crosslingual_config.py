@@ -23,6 +23,8 @@ MODEL_MAP = {
     "ar": ("hugo/byt5-mono-ar-v1", "73b0b3095f36e3369842bfa33659e326a7aa661e"),
     "bn": ("hugo/byt5-mono-bn-v1", "273dafaf63f799a4d6865aa482e1acaba83fd8dd"),
     "sw": ("hugo/byt5-mono-sw-v1", "b3c60b74c853d988ac1c425bc174456307f8f1bc"),
+    "ko": ("hugo/byt5-mono-ko-v1", "984cca6baf64e3f2b81d44632d2fd0a42f8be087"),
+    "es": ("hugo/byt5-mono-es-v1", "19f1f4683914f6e337718f249ceb62acb0e2bd1e"),
 }
 
 BASE_DIR = Path(os.path.dirname(os.path.realpath(__file__))).parent
@@ -32,7 +34,7 @@ PRESETS = {
         "template": BASE_DIR / "configs/templates/standard-tydi-qa.yaml",
         "output_dir": BASE_DIR / "configs/foreign_lang_exps/",
         "file_prefix": "qa",
-        "languages": ["ar", "bn", "en", "ru", "sw"],
+        "languages": ["ar", "bn", "en", "ko", "ru"],
         "override": False,
     }
 }

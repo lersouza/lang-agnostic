@@ -34,7 +34,16 @@ PRESETS = {
         "template": BASE_DIR / "configs/templates/standard-tydi-qa.yaml",
         "output_dir": BASE_DIR / "configs/foreign_lang_exps/",
         "file_prefix": "qa",
-        "languages": ["ar", "bn", "en", "ko", "ru"],
+        "source_languages": ["ar", "bn", "en", "ko", "ru"],
+        "target_languages": ["ar", "bn", "en", "ko", "ru"],
+        "override": False,
+    },
+    "sberquad": {
+        "template": BASE_DIR / "configs/templates/sberquad.yaml",
+        "output_dir": BASE_DIR / "configs/sberquad_experiments/",
+        "file_prefix": "qa",
+        "source_languages": ["ar", "bn", "en", "ko", "pt", "ru"],
+        "target_languages": ["ru"],
         "override": False,
     }
 }
@@ -79,10 +88,10 @@ def main(args):
     """Main processing method."""
     user_selection = PRESETS.get(args.preset_name)
 
-    cross_lang_pairs = itertools.permutations(user_selection["languages"], 2)
-    same_lang_pairs = zip(user_selection["languages"], user_selection["languages"])
+    source = user_selection["source_languages"]
+    target = user_selection["target_languages"]
 
-    all_lang_pairs = itertools.chain(cross_lang_pairs, same_lang_pairs)
+    all_lang_pairs = itertools.product(source, target)
 
     for pair in all_lang_pairs:
         config_content = process_pair(pair, user_selection["template"])

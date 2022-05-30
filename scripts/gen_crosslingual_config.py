@@ -54,6 +54,14 @@ PRESETS = {
         "source_languages": AVAILABLE_SOURCE_LANGUAGES,
         "target_languages": ["en"],
         "override": False,
+    },
+    "korquad": {
+        "template": BASE_DIR / "configs/templates/korquad.yaml",
+        "output_dir": BASE_DIR / "configs/korquad_experiments/",
+        "file_prefix": "qa",
+        "source_languages": AVAILABLE_SOURCE_LANGUAGES,
+        "target_languages": ["ko"],
+        "override": False,
     }
 }
 

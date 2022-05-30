@@ -100,6 +100,21 @@ class SberquadDataModule(QuestionAnsweringDataModule):
         return self.load_dataset("sberquad")
 
 
+class Korquad1DataModule(QuestionAnsweringDataModule):
+    """ A data module for the KorQuAD v1.0 dataset. """
+
+    def prepare_datasets(self) -> DatasetDict:
+        korquad = self.load_dataset("squad_kor_v1", split=["train", "validation"])
+
+        return DatasetDict(
+            {
+                "train": korquad["train"],
+                "validation": korquad["validation"],
+                "test": korquad["validation"],
+            }
+        )
+
+
 class TydiQAGoldPModule(QuestionAnsweringDataModule):
     """
     Represents a data module for the GoldP task of the TydiQA dataset.

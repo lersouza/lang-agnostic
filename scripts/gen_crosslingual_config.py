@@ -46,6 +46,14 @@ PRESETS = {
         "source_languages": AVAILABLE_SOURCE_LANGUAGES,
         "target_languages": ["ru"],
         "override": False,
+    },
+    "squad": {
+        "template": BASE_DIR / "configs/templates/squad.yaml",
+        "output_dir": BASE_DIR / "configs/squad_experiments/",
+        "file_prefix": "qa",
+        "source_languages": AVAILABLE_SOURCE_LANGUAGES,
+        "target_languages": ["en"],
+        "override": False,
     }
 }
 
@@ -93,6 +101,9 @@ def main(args):
     target = user_selection["target_languages"]
 
     all_lang_pairs = itertools.product(source, target)
+
+    # Ensure output dir is created
+    os.makedirs(user_selection["output_dir"], exist_ok=True)
 
     for pair in all_lang_pairs:
         config_content = process_pair(pair, user_selection["template"])

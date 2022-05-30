@@ -22,12 +22,13 @@ MODEL_MAP = {
     "ru": ("hugo/byt5-mono-ru-v1", "72dd45751d10e64ddae03841106488c8fa37eafb"),
     "ar": ("hugo/byt5-mono-ar-v1", "73b0b3095f36e3369842bfa33659e326a7aa661e"),
     "bn": ("hugo/byt5-mono-bn-v1", "273dafaf63f799a4d6865aa482e1acaba83fd8dd"),
-    "sw": ("hugo/byt5-mono-sw-v1", "b3c60b74c853d988ac1c425bc174456307f8f1bc"),
+    # "sw": ("hugo/byt5-mono-sw-v1", "b3c60b74c853d988ac1c425bc174456307f8f1bc"),
     "ko": ("hugo/byt5-mono-ko-v1", "984cca6baf64e3f2b81d44632d2fd0a42f8be087"),
     "es": ("hugo/byt5-mono-es-v1", "19f1f4683914f6e337718f249ceb62acb0e2bd1e"),
 }
 
 BASE_DIR = Path(os.path.dirname(os.path.realpath(__file__))).parent
+AVAILABLE_SOURCE_LANGUAGES = list(MODEL_MAP.keys())
 
 PRESETS = {
     "tydi_qa": {
@@ -42,7 +43,7 @@ PRESETS = {
         "template": BASE_DIR / "configs/templates/sberquad.yaml",
         "output_dir": BASE_DIR / "configs/sberquad_experiments/",
         "file_prefix": "qa",
-        "source_languages": ["ar", "bn", "en", "ko", "pt", "ru"],
+        "source_languages": AVAILABLE_SOURCE_LANGUAGES,
         "target_languages": ["ru"],
         "override": False,
     }

@@ -25,10 +25,14 @@ MODEL_MAP = {
     # "sw": ("hugo/byt5-mono-sw-v1", "b3c60b74c853d988ac1c425bc174456307f8f1bc"),
     "ko": ("hugo/byt5-mono-ko-v1", "984cca6baf64e3f2b81d44632d2fd0a42f8be087"),
     "es": ("hugo/byt5-mono-es-v1", "19f1f4683914f6e337718f249ceb62acb0e2bd1e"),
+    "hierarchical": ("hugo/byt5-mono-hierarchical-v1", "5bd9ddc9d25cde834842e2dae992601ab2424446"),
+    "nonsense": ("hugo/byt5-mono-nonsense-v1", "5e4676baa37e04ae9d74132bd2b73b39027d193d"),
+    "multi": ("google/byt5-small", "null"),
 }
 
 BASE_DIR = Path(os.path.dirname(os.path.realpath(__file__))).parent
-AVAILABLE_SOURCE_LANGUAGES = list(MODEL_MAP.keys())
+BASELINES = ["hierarchical", "nonsense", "multi"]
+AVAILABLE_SOURCE_LANGUAGES = set(MODEL_MAP.keys()) - set(BASELINES)
 
 PRESETS = {
     "tydi_qa": {
@@ -62,7 +66,23 @@ PRESETS = {
         "source_languages": AVAILABLE_SOURCE_LANGUAGES,
         "target_languages": ["ko"],
         "override": False,
-    }
+    },
+    "korquad-baselines": {
+        "template": BASE_DIR / "configs/templates/korquad.yaml",
+        "output_dir": BASE_DIR / "configs/korquad_baselines/",
+        "file_prefix": "qa",
+        "source_languages": BASELINES,
+        "target_languages": ["ko"],
+        "override": False,
+    },
+    "sberquad-baselines": {
+        "template": BASE_DIR / "configs/templates/sberquad.yaml",
+        "output_dir": BASE_DIR / "configs/sberquad_baselines/",
+        "file_prefix": "qa",
+        "source_languages": BASELINES,
+        "target_languages": ["ru"],
+        "override": False,
+    },
 }
 
 

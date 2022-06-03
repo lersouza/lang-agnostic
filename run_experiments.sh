@@ -33,9 +33,17 @@ for seed in "${SEEDS[@]}"; do
         
         if [ ! -z "$CURRENT_RUN_ID" ]; then
             COMMAND="$COMMAND --trainer.logger=WandbLogger --trainer.logger.id=$CURRENT_RUN_ID"
+            
+            LOGGER_PROJECT=$(grep -A3 'logger:' $exp | tail -n1)
+            LOGGER_PROJECT=${LOGGER_PROJECT//*project: /}
 
-            if [ -f "./nli/$CURRENT_RUN_ID/checkpoints/last.ckpt" ]; then
-                COMMAND="$COMMAND --ckpt_path=./nli/$CURRENT_RUN_ID/checkpoints/last.ckpt"
+            CHECKPOINT_PATH="./$LOGGER_PROJECT/$CURRENT_RUN_ID/checkpoints/last.ckpt"
+
+            echo "Try to retore Run State. Run ID=$CURRENT_RUN_ID. Project=$LOGGER_PROJECT"
+
+            if [ -f CHECKPOINT_PATH ]; then
+                echo "Restoring Run State from Checkpoint at $CHECKPOINT_PATH"
+                COMMAND="$COMMAND --ckpt_path=$CHECKPOINT_PATH"
             fi
         fi
 

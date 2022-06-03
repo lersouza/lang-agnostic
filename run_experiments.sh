@@ -41,7 +41,7 @@ for seed in "${SEEDS[@]}"; do
 
             echo "Try to retore Run State. Run ID=$CURRENT_RUN_ID. Project=$LOGGER_PROJECT"
 
-            if [ -f CHECKPOINT_PATH ]; then
+            if [ -f $CHECKPOINT_PATH ]; then
                 echo "Restoring Run State from Checkpoint at $CHECKPOINT_PATH"
                 COMMAND="$COMMAND --ckpt_path=$CHECKPOINT_PATH"
             fi

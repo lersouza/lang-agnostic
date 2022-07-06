@@ -13,9 +13,12 @@
     "per_device_eval_batch_size": 1,
     "gradient_accumulation_steps": 12,
     "max_train_samples": 1000,
+    "max_eval_samples": 500,
     "learning_rate": 3e-5,
     "num_train_epochs": 2,
     "max_seq_length": 2048,
+    "max_answer_length": 768,
+    "generation_max_length": 768,
     "predict_with_generate": true,
-    "output_dir": "/tmp/model_v3_qa_debug/"
+    "output_dir": "/tmp/model_v2_qa_debug/"
 }

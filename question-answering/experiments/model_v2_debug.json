@@ -1,0 +1,20 @@
+{
+    "model_name_or_path": "hugo/byt5-mono-en-v2",
+    "model_revision": "dd1b1044f4fbc2cc47569162bc71f9fddeaf482d",
+    "dataset_name": "tydiqa",
+    "dataset_config_name": "secondary_task",
+    "context_column": "context",
+    "question_column": "question",
+    "answer_column": "answers",
+    "do_train": true,
+    "do_eval": true,
+    "per_device_train_batch_size": 1,
+    "per_device_eval_batch_size": 1,
+    "gradient_accumulation_steps": 12,
+    "max_train_samples": 1000,
+    "learning_rate": 3e-5,
+    "num_train_epochs": 2,
+    "max_seq_length": 2048,
+    "predict_with_generate": true,
+    "output_dir": "/tmp/model_v3_qa_debug/"
+}

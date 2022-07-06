@@ -614,8 +614,10 @@ def main():
             max_length=max_seq_length,
             padding=padding,
             truncation=True,
-            return_overflowing_tokens=True,
-            return_offsets_mapping=True,
+            # FIX: Removing the following args, since ByT5 do not have a Fast Tokenizer implementation
+            #      and, also, we do not perform any additional processing for breaking long contexts
+            # return_overflowing_tokens=True,
+            # return_offsets_mapping=True,
         )
         # Setup the tokenizer for targets
         with tokenizer.as_target_tokenizer():
@@ -623,9 +625,14 @@ def main():
                 targets, max_length=max_answer_length, padding=padding, truncation=True
             )
 
-        # Since one example might give us several features if it has a long context, we need a map from a feature to
+        # Since one example might give us several features if it has a long context,
+        # we need a map from a feature to
         # its corresponding example. This key gives us just that.
-        sample_mapping = model_inputs.pop("overflow_to_sample_mapping")
+
+        # FIX: Since we'll not break long contexts, 
+        #      we assume the sample mapping to be 1:1 with input_ids
+        # sample_mapping = model_inputs.pop("overflow_to_sample_mapping")
+        sample_mapping = list(range(len(model_inputs["input_ids"])))
 
         # For evaluation, we will need to convert our predictions to substrings of the context, so we keep the
         # corresponding example_id and we will store the offset mappings.
@@ -746,6 +753,10 @@ def main():
         outputs: EvalLoopOutput,
         stage="eval",
     ):
+        # FIX: Since the Trainer hides columns that are not used by the model,
+        #      we have to get them back for post-processing
+        features.set_format(type=features.format["type"], columns=list(features.features.keys()))
+
         # Decode the predicted tokens.
         preds = outputs.predictions
         if isinstance(preds, tuple):

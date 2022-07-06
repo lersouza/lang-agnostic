@@ -113,6 +113,12 @@ class ModelArguments:
             )
         },
     )
+    model_from_flax: bool = field(
+        default=False,
+        metadata={
+            "help": "Whether or not the model checkpoint is a Flax checkpoint"
+        },
+    )
     use_auth_token: bool = field(
         default=False,
         metadata={
@@ -477,6 +483,7 @@ def main():
         cache_dir=model_args.cache_dir,
         revision=model_args.model_revision,
         use_auth_token=True if model_args.use_auth_token else None,
+        from_flax=model_args.model_from_flax,
     )
 
     model.resize_token_embeddings(len(tokenizer))

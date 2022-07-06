@@ -4,6 +4,7 @@ neptune_credentials.txt
 .vscode/settings.json
 .neptune/
 .venv/
+hf_code/
 
 output/
 checkpoints/

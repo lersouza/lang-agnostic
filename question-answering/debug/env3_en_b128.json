@@ -1,7 +1,7 @@
 {
     "model_name_or_path": "hugo/byt5-mono-en-v3",
     "model_revision": "6d7d735f585f032191265a22d26926a7814c8a5e",
-    "from_flax": true,
+    "model_from_flax": true,
     "dataset_name": "../datasets/tydiqa_goldp.py",
     "dataset_config_name": "english",
     "context_column": "context",

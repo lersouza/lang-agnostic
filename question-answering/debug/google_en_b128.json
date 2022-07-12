@@ -12,11 +12,13 @@
     "gradient_accumulation_steps": 64,
     "optim": "adafactor",
     "learning_rate": 0.001,
+    "lr_scheduler_type": "constant",
     "num_train_epochs": 2,
     "max_seq_length": 1024,
     "max_answer_length": 512,
     "generation_max_length": 512,
     "pad_to_max_length": false,
     "predict_with_generate": true,
-    "output_dir": "/tmp/model_google_qa_debug/"
+    "output_dir": "/workspace/runs/qa/debug/google_en_b128/",
+    "reports_to": ["wandb"]
 }

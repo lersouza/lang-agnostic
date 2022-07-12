@@ -14,6 +14,7 @@
     "gradient_accumulation_steps": 64,
     "optim": "adafactor",
     "learning_rate": 0.001,
+    "lr_scheduler_type": "constant",
     "num_train_epochs": 2,
     "max_seq_length": 1024,
     "max_answer_length": 512,

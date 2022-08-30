@@ -12,7 +12,7 @@ DEFAULT_BYTE_OUTPUT_FEATURES = {
 PRETRAIN_LANGUAGES = ("en",)
 MAX_PRETRAIN_TOKENS = int(2**16 * 1_000_000 * 1.2)
 MAX_VALIDATION_TOKENS = int((MAX_PRETRAIN_TOKENS * 0.05) / 0.95)
-MEAN_NOISE_SPAN_LENGTH = 20
+MEAN_NOISE_SPAN_LENGTH = 3
 
 
 for lang in PRETRAIN_LANGUAGES:
@@ -20,8 +20,8 @@ for lang in PRETRAIN_LANGUAGES:
         f"monobyte.pretrain.{lang}",
         source=seqio.TFExampleDataSource(
             split_to_filepattern={
-                "train": f"mc4_{lang}_train_{MAX_PRETRAIN_TOKENS}.tfrecord",
-                "validation": f"mc4_{lang}_validation_{MAX_VALIDATION_TOKENS}.tfrecord"
+                "train": f"gs://monobyte/dataset/mc4_{lang}_train_{MAX_PRETRAIN_TOKENS}.tfrecord",
+                "validation": f"gs://monobyte/dataset/mc4_{lang}_validation_{MAX_VALIDATION_TOKENS}.tfrecord"
             },
             feature_description={
                 "text": tf.io.FixedLenFeature([], tf.string, default_value=""),
@@ -32,7 +32,6 @@ for lang in PRETRAIN_LANGUAGES:
                 seqio.preprocessors.rekey, key_map={"inputs": None, "targets": "text"}
             ),
             seqio.preprocessors.tokenize,
-            seqio.CacheDatasetPlaceholder(),
             functools.partial(
                 t5.data.preprocessors.span_corruption,
                 mean_noise_span_length=MEAN_NOISE_SPAN_LENGTH,

@@ -1,4 +1,5 @@
 from __gin__ import dynamic_registration
+from t5x import trainer
 import monobyte_tasks
 
 include 't5x/examples/t5/byt5/small.gin'
@@ -6,7 +7,7 @@ include 't5x/configs/runs/pretrain.gin'
 
 # MIXTURE_OR_TASK_NAME = "monobyte.pretrain.en" => let us specify this via command line
 
-TASK_FEATURE_LENGTHS = {"inputs": 1024, "targets": 189}
+TASK_FEATURE_LENGTHS = {"inputs": 1024, "targets": 229}
 TRAIN_STEPS = 62_500  # 1M // 16 accumulation
 DROPOUT_RATE = 0.0
 BATCH_SIZE = 1024

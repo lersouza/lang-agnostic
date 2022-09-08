@@ -1,0 +1,22 @@
+from __gin__ import dynamic_registration
+from t5x import partitioning
+from t5x import trainer
+from t5x import utils
+
+import monobyte_tasks
+
+include 't5x/examples/t5/byt5/small.gin'
+include 't5x/configs/runs/pretrain.gin'
+
+MIXTURE_OR_TASK_NAME = "monobyte.pretrain.en"
+TASK_FEATURE_LENGTHS = {"inputs": 1024, "targets": 229}
+TRAIN_STEPS = 1_000_000
+DROPOUT_RATE = 0.0
+BATCH_SIZE = 64
+
+partitioning.PjitPartitioner:
+  num_partitions = 2
+
+utils.SaveCheckpointConfig.period = 5000
+utils.SaveCheckpointConfig.keep = 20
+

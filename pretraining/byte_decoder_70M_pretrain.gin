@@ -11,7 +11,7 @@ from t5x import partitioning
 from t5x import utils
 from t5x import optimizers
 from t5x import decoding
-from t5x import Trainer
+from t5x import trainer
 
 from t5x.examples.decoder_only import network
 

@@ -6,7 +6,7 @@ import tensorflow as tf
 import preprocessors
 
 DEFAULT_BYTE_OUTPUT_FEATURES = {
-    "inputs": seqio.Feature(vocabulary=seqio.ByteVocabulary()),
+    "inputs": seqio.Feature(vocabulary=seqio.ByteVocabulary(), required=False),
     "targets": seqio.Feature(vocabulary=seqio.ByteVocabulary()),
 }
 

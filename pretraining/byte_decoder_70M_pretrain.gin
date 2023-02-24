@@ -9,6 +9,9 @@ from t5.data import mixtures
 from t5x import models
 from t5x import partitioning
 from t5x import utils
+from t5x import optimizers
+from t5x import decoding
+from t5x import Trainer
 
 from t5x.examples.decoder_only import network
 
@@ -24,6 +27,8 @@ DROPOUT_RATE = 0.0
 VOCABULARY = @seqio.ByteVocabulary()
 
 LABEL_SMOOTHING = 0.0
+Z_LOSS = 0.0001
+
 # NOTE: When fine-tuning the public T5 checkpoints (trained in T5 MeshTF)
 # the loss normalizing factor should be set to pretraining batch_size *
 # target_token_length.
@@ -76,9 +81,9 @@ models.DecoderOnlyModel:
   z_loss = %Z_LOSS
   label_smoothing = %LABEL_SMOOTHING
   loss_normalizing_factor = %LOSS_NORMALIZING_FACTOR
-  predict_batch_with_aux.num_decodes = 8
   inputs_bidirectional_attention = False
 
+models.DecoderOnlyModel.predict_batch_with_aux.num_decodes = 8
 
 decoding.temperature_sample:
   temperature = 1.0
@@ -111,3 +116,6 @@ utils.SaveCheckpointConfig:
 
 utils.RestoreCheckpointConfig:
   restore_dataset = True
+
+trainer.Trainer:
+  num_microbatches = 4

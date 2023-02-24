@@ -3,6 +3,8 @@ import functools
 import seqio
 import tensorflow as tf
 
+import preprocessors
+
 DEFAULT_BYTE_OUTPUT_FEATURES = {
     "inputs": seqio.Feature(vocabulary=seqio.ByteVocabulary()),
     "targets": seqio.Feature(vocabulary=seqio.ByteVocabulary()),
@@ -28,6 +30,8 @@ for lang in PRETRAIN_LANGUAGES:
                 seqio.preprocessors.rekey, key_map={"inputs": None, "targets": "text"}
             ),
             seqio.preprocessors.tokenize,
+            preprocessors.group_texts,
+            seqio.preprocessors.append_eos_after_trim
         ],
         output_features=DEFAULT_BYTE_OUTPUT_FEATURES,
         metric_fns=[],
